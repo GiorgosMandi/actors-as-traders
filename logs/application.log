@@ -1,0 +1,29 @@
+2022-06-13 20:46:19 [34mINFO [0;39m [36mplay.api.http.EnabledFilters[0;39m [35m[0;39m Enabled Filters (see <https://www.playframework.com/documentation/latest/Filters>):
+
+    play.filters.csrf.CSRFFilter
+    play.filters.headers.SecurityHeadersFilter
+    play.filters.hosts.AllowedHostsFilter
+
+2022-06-13 20:46:19 [34mINFO [0;39m [36mplay.api.Play[0;39m [35m[0;39m Application started (Dev) (no global state)
+2022-06-13 21:22:13 [34mINFO [0;39m [36mp.a.i.l.c.CoordinatedShutdownSupport[0;39m [35m[0;39m Starting synchronous coordinated shutdown with ServerStoppedReason reason and 35000 milliseconds timeout
+2022-06-13 21:22:13 [34mINFO [0;39m [36mplay.core.server.AkkaHttpServer[0;39m [35m[0;39m Stopping Akka HTTP server...
+2022-06-13 21:22:13 [34mINFO [0;39m [36mplay.core.server.AkkaHttpServer[0;39m [35m[0;39m Terminating server binding for /0:0:0:0:0:0:0:0:9001
+2022-06-13 21:22:13 [34mINFO [0;39m [36mplay.core.server.AkkaHttpServer[0;39m [35m[0;39m Running provided shutdown stop hooks
+2022-06-14 22:02:22 [1;31mERROR[0;39m [36makka.actor.RepointableActorRef[0;39m [35makka://PriceListener/system/Materializers/StreamSupervisor-0/flow-0-1-fileSource[0;39m Error during preStart in [akka.stream.impl.io.FileSource$$anon$2-fileSource]: example.csv
+java.nio.file.NoSuchFileException: example.csv
+	at akka.stream.impl.io.FileSource$$anon$2.preStart(IOSources.scala:68)
+	at akka.stream.impl.fusing.GraphInterpreter.init(GraphInterpreter.scala:306)
+	at akka.stream.impl.fusing.GraphInterpreterShell.init(ActorGraphInterpreter.scala:619)
+	at akka.stream.impl.fusing.ActorGraphInterpreter.tryInit(ActorGraphInterpreter.scala:727)
+	at akka.stream.impl.fusing.ActorGraphInterpreter.preStart(ActorGraphInterpreter.scala:776)
+	at akka.actor.Actor.aroundPreStart(Actor.scala:548)
+	at akka.actor.Actor.aroundPreStart$(Actor.scala:548)
+	at akka.stream.impl.fusing.ActorGraphInterpreter.aroundPreStart(ActorGraphInterpreter.scala:716)
+	at akka.actor.ActorCell.create(ActorCell.scala:644)
+	at akka.actor.ActorCell.invokeAll$1(ActorCell.scala:514)
+	at akka.actor.ActorCell.systemInvoke(ActorCell.scala:536)
+	at akka.dispatch.Mailbox.processAllSystemMessages(Mailbox.scala:295)
+	at akka.dispatch.Mailbox.run(Mailbox.scala:230)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)
+	at java.base/java.lang.Thread.run(Thread.java:829)
