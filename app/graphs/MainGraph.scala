@@ -5,7 +5,7 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 import akka.stream.scaladsl.{FileIO, Flow, Sink}
 import akka.util.ByteString
-import utils.TradeActions
+import utils.TradeActionT
 
 import java.nio.file.Paths
 
@@ -29,7 +29,7 @@ object MainGraph extends App {
     val csvParserFlow: Flow[ByteString, List[ByteString], NotUsed] = CsvParsing.lineScanner(delimiter, quoteChar, escapeChar)
     val csvToMapFlow: Flow[List[ByteString], Map[String, String], NotUsed] = CsvToMap.toMapAsStrings()
     val priceFlow = PriceFlow.priceFlow
-    val printer = Sink.foreach[(TradeActions, Map[String, String])](t => println(t))
+    val printer = Sink.foreach[(TradeActionT, Map[String, String])](t => println(t._1, t._2(Columns.PRICE)))
 
     sourceFile
       .via(csvParserFlow)
