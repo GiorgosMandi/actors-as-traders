@@ -13,7 +13,7 @@ lazy val root = (project in file("."))
   )
 
 // Akka Essentials
-val akkaVersion ="2.6.19"
+val akkaVersion ="2.6.17"
 // https://mvnrepository.com/artifact/com.typesafe.akka/akka-actor
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % akkaVersion
 // https://mvnrepository.com/artifact/com.typesafe.akka/akka-testkit
