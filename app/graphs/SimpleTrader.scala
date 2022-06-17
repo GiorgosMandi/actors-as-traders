@@ -5,13 +5,16 @@ import utils.TradeAction.{BUY, SELL}
 
 class SimpleTrader extends Actor with ActorLogging {
 
-    val MIN_CAPITAL = 5f
+    val MIN_DEPOSIT = 5f
+    val MAX_CAPITAL = 300f
     val INITIAL_CAPITAL = 100f
+    val PROFIT_BASE = 10f
+
+
     override def receive: Receive = trade(INITIAL_CAPITAL, 0f, Nil)
 
-    // TODO Capitalize: if run out of capital transform a portion of the deposits into capital
     def trade(capital: Double, deposits: Double, purchases: List[(Double, Double)]): Receive = {
-        case (BUY, price: Double) if capital * .2 > MIN_CAPITAL =>
+        case (BUY, price: Double) =>
             val investment = capital * .2
             val capitalAfterTrade = capital - investment
             val newPurchase = (price, investment)
@@ -20,25 +23,37 @@ class SimpleTrader extends Actor with ActorLogging {
             context.become(trade(capitalAfterTrade, deposits, newPurchase :: purchases))
 
         case (SELL, price: Double) =>
-            val (profitablePurchases, rest) = purchases.partition(_._1 < price)
-            log.warning(s"SELLING: $profitablePurchases with price $price")
-
             // SELLING
+            val (profitablePurchases, rest) = purchases.partition(_._1 < price)
+            val previousInvestments = profitablePurchases.map(_._2).sum
             val profit = profitablePurchases
               .map { case (previousPrice, investment) => (price * investment) - (previousPrice * investment) }
               .sum
+            log.warning(s"SELLING: PROFIT: $profit")
 
-            val newCapital = profit + capital
-            val newDeposits = computeDeposits(newCapital, INITIAL_CAPITAL * .2f)
-            context.become(trade(newCapital-newDeposits, newDeposits + deposits, rest))
+            val depositedProfit = depositProfit(profit, PROFIT_BASE, MIN_DEPOSIT)
+            val capitalizedProfit = profit - depositedProfit
+            val newCapital = previousInvestments + capitalizedProfit + capital
+            val depositedCapital = depositCapital(newCapital, MAX_CAPITAL, MIN_DEPOSIT)
+            val newDeposits = deposits + depositedProfit + depositedCapital
+
+            context.become(trade(newCapital-depositedCapital, newDeposits, rest))
         case "print" =>
             log.warning(s"\n---\nCapital: $capital\nDeposits: $deposits\nExisting Purchases: $purchases\n\n")
     }
 
-    def computeDeposits(capital: Double, limit: Double): Double = {
-        if (capital > limit) {
-            return limit
+    def depositProfit(profit: Double, base: Double, minDeposit: Double): Double = {
+        val ratio = profit/ (profit+base)
+        val deposit =  ratio*profit
+        if (deposit > minDeposit) deposit else 0f
+    }
+
+    def depositCapital(capital: Double, maxCapital: Double, minDeposit: Double): Double ={
+        if (capital > maxCapital){
+            val capitalBase = maxCapital * .5
+            depositProfit(capital, capitalBase, minDeposit)
         }
-        0f
+        else
+            0f
     }
 }

@@ -53,6 +53,6 @@ object MainGraph extends App {
       .to(tradeSink)
       .run()
 
-    Thread.sleep(2000)
+    Thread.sleep(3000)
     trader ! "print"
 }
