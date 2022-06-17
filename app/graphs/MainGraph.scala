@@ -6,19 +6,16 @@ import akka.stream.alpakka.csv.scaladsl.{CsvParsing, CsvToMap}
 import akka.stream.scaladsl.{FileIO, Flow, Sink}
 import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
+import utils.Constants.{Columns, DATASOURCE}
+import utils.TradeAction.PRINT
 import utils.TradeActionT
 
 import java.nio.file.Paths
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object MainGraph extends App {
 
-    object Columns {
-        val ID = "id"
-        val TIMESTAMP = "TIMESTAMP"
-        val PRICE = "VALUE"
-    }
-
-    val path: String = "/home/gmandi/Documents/myProjects/High-Frequency-Trading-App/resources/random-prices.csv"
     val delimiter: Byte = '\t'
     val quoteChar: Byte = '\"'
     val escapeChar: Byte = '\\'
@@ -31,16 +28,15 @@ object MainGraph extends App {
           | }
         """.stripMargin)
     implicit val system: ActorSystem = ActorSystem("PriceListener", ConfigFactory.load(config))
-
     val trader = system.actorOf(Props[SimpleTrader], "MainTrader")
 
-    val file = Paths.get(path)
+    val file = Paths.get(DATASOURCE)
     val sourceFile = FileIO.fromPath(file)
     val csvParserFlow: Flow[ByteString, List[ByteString], NotUsed] = CsvParsing.lineScanner(delimiter, quoteChar, escapeChar)
     val csvToMapFlow: Flow[List[ByteString], Map[String, String], NotUsed] = CsvToMap.toMapAsStrings()
     val priceFlow = PriceFlow.priceFlow
 
-    val tradeSink = Sink.foreach[(TradeActionT, Map[String, String])]{case (tradeAction, priceConf) => trader ! (tradeAction, priceConf(Columns.PRICE).toDouble)}
+    val tradeSink = Sink.foreach[(TradeActionT, Map[String, String])] { case (tradeAction, priceConf) => trader ! (tradeAction, priceConf(Columns.PRICE).toDouble) }
 
     val printer = Sink.foreach[(TradeActionT, Map[String, String])](t => println(t._1, t._2(Columns.PRICE)))
 
@@ -53,6 +49,8 @@ object MainGraph extends App {
       .to(tradeSink)
       .run()
 
-    Thread.sleep(3000)
-    trader ! "print"
+    val cancelPrint = system.scheduler
+      .scheduleWithFixedDelay(3 second, 2 second, trader, PRINT)(system.dispatcher)
+    Thread.sleep(15000)
+    cancelPrint.cancel()
 }

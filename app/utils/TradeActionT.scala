@@ -5,6 +5,7 @@ object TradeAction {
     case object BUY extends TradeActionT
     case object SELL extends TradeActionT
     case object OMIT extends TradeActionT
+    case object PRINT extends TradeActionT
 
     def elect(tradeActions: Product): TradeActionT ={
         val tradeActionsList = tradeActions.productIterator.map(_.asInstanceOf[TradeActionT]).toList

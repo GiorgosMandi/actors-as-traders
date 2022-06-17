@@ -1,7 +1,7 @@
 package graphs
 
 import akka.actor.{Actor, ActorLogging}
-import utils.TradeAction.{BUY, SELL}
+import utils.TradeAction.{BUY, PRINT, SELL}
 
 class SimpleTrader extends Actor with ActorLogging {
 
@@ -38,8 +38,8 @@ class SimpleTrader extends Actor with ActorLogging {
             val newDeposits = deposits + depositedProfit + depositedCapital
 
             context.become(trade(newCapital-depositedCapital, newDeposits, rest))
-        case "print" =>
-            log.warning(s"\n---\nCapital: $capital\nDeposits: $deposits\nExisting Purchases: $purchases\n\n")
+        case PRINT =>
+            log.warning(s"\n---\nCapital: $capital\nDeposits: $deposits\nExisting Purchases: $purchases\n----")
     }
 
     def depositProfit(profit: Double, base: Double, minDeposit: Double): Double = {
