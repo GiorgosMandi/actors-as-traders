@@ -1,4 +1,5 @@
-package utils
+package utils.constants
+
 sealed trait TradeActionT
 
 object TradeAction {

@@ -1,7 +1,7 @@
-package graphs
+package graphs.actors
 
 import akka.actor.{Actor, ActorLogging}
-import utils.TradeAction.{BUY, PRINT, SELL}
+import utils.constants.TradeAction.{BUY, PRINT, SELL}
 
 class SimpleTrader extends Actor with ActorLogging {
 

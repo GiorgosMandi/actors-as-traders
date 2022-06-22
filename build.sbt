@@ -29,3 +29,6 @@ libraryDependencies ++= Seq(
   "com.lightbend.akka" %% "akka-stream-alpakka-csv" % "3.0.4",
   "com.typesafe.akka" %% "akka-stream" % akkaVersion
 )
+
+val circeVersion = "0.14.1"
+libraryDependencies += "io.circe" %% "circe-parser" % circeVersion

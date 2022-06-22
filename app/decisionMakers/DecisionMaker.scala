@@ -1,6 +1,6 @@
 package decisionMakers
 
-import utils.TradeActionT
+import utils.constants.TradeActionT
 
 trait DecisionMaker {
 

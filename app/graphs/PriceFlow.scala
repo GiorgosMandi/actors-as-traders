@@ -5,7 +5,7 @@ import akka.stream.FlowShape
 import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Zip}
 import decisionMakers.RandomDecider
-import utils.{TradeAction, TradeActionT}
+import utils.constants.{TradeAction, TradeActionT}
 
 object PriceFlow {
 

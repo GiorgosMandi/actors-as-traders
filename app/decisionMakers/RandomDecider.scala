@@ -1,7 +1,7 @@
 package decisionMakers
 
-import utils.TradeActionT
-import utils.TradeAction.{BUY, OMIT, SELL}
+import utils.constants.TradeAction.{BUY, OMIT, SELL}
+import utils.constants.TradeActionT
 
 import scala.util.Random
 
