@@ -3,6 +3,7 @@ package graphs
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
 import graphs.actors.CoinGeckoListener
+import utils.constants.TradeAction.PRINT
 
 object Main extends App{
 
@@ -15,11 +16,15 @@ object Main extends App{
         """.stripMargin)
 
     implicit val system: ActorSystem = ActorSystem("CryptoTrader", ConfigFactory.load(config))
-    val priceGraphActor: ActorRef = PriceGraphActor("MainGraphActor", system).graph
 
+
+    val priceGraph: PriceGraphActor = PriceGraphActor("MainGraphActor", system)
+    val priceGraphActor = priceGraph.graph
     val listener = system.actorOf(Props(classOf[CoinGeckoListener], priceGraphActor), "CoinGeckoListener")
 
     listener ! CoinGeckoListener.Start(2)
-    Thread.sleep(10000)
+    Thread.sleep(20000)
     listener ! CoinGeckoListener.Stop
+    priceGraph.trader ! PRINT
 }
+
