@@ -1,16 +1,13 @@
-package graphs.actors
+package graphs.actors.listeners
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, FSM, Timers}
-import akka.http.scaladsl.{Http, HttpExt}
+import akka.actor.{ActorRef, ActorSystem, FSM, Timers}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
+import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.pipe
 import akka.util.ByteString
-import graphs.actors.CoinGeckoListener.{Hit, ListenerKey}
-import graphs.actors.CryptoApiListenerFMS._
 import io.circe.parser.parse
 import models.CoinGeckoResponse
 
-import scala.concurrent.duration._
 import scala.language.postfixOps
 
 class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, ListenerData] with Timers{
@@ -25,25 +22,25 @@ class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, Listener
     val coinGeckoRequest: HttpRequest = HttpRequest(uri = requestUrl)
     val http: HttpExt = Http(system)
 
-    startWith(Idle, Unitialize)
+    startWith(Idle, EmptyState)
 
     when(Idle) {
-        case Event(Initialize(delay), Unitialize) =>
-            goto(Operational) using Initialize(delay)
-        case _ =>
-            log.error("Not expecting message")
+        case Event(Initialize(delay), EmptyState) =>
+            timers.startTimerWithFixedDelay(ListenerKey, Request, delay second)
+            goto(Operational)
+        case x =>
+            log.error(s"Not expecting message ${x.toString}")
             stay()
     }
 
     when(Operational) {
-        case Event(Initialize(delay), _) =>
-            timers.startTimerWithFixedDelay(ListenerKey, Request, delay second)
-            stay()
-        case Event(Request, _) =>
+        case Event(Request, EmptyState) =>
+            log.warning("Send Request")
             http.singleRequest(coinGeckoRequest).pipeTo(self)
             stay()
 
-        case Event(HttpResponse(StatusCodes.OK, headers, entity, _), _) =>
+        case Event(HttpResponse(StatusCodes.OK, headers, entity, _), EmptyState) =>
+            log.warning("Received Response")
             val futureBody = entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(body => body.utf8String)
             futureBody.map { body: String =>
                 parse(body)
@@ -54,28 +51,30 @@ class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, Listener
                   )
             }
             stay()
-        case Event(resp@HttpResponse(code, _, _, _), _) =>
+        case Event(resp@HttpResponse(code, _, _, _), EmptyState) =>
             log.warning("Request failed, response code: " + code)
             resp.discardEntityBytes()
             stay()
 
         case Event(Stop, _) =>
-           goto(Idle)
+            timers.cancel(ListenerKey)
+            goto(Idle)
+        case x =>
+            log.error(s"Not expecting message ${x.toString}")
+            stay()
     }
-
 }
+
 object CryptoApiListenerFMS {
     trait ListenerState
     case object Idle extends ListenerState
     case object Operational extends ListenerState
 
     trait ListenerData
-    case object Unitialize extends ListenerData
+    case object EmptyState extends ListenerData
     case class Initialize(delay: Int) extends ListenerData
     case object Request extends ListenerData
     case object Stop extends ListenerData
-
-
 }
 
 

@@ -1,6 +1,6 @@
-package graphs.actors
+package graphs.actors.listeners
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Timers}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.pipe

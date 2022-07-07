@@ -2,7 +2,8 @@ package graphs
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
-import graphs.actors.CoinGeckoListener
+import graphs.actors.CryptoApiListenerFMS.{Initialize, Stop}
+import graphs.actors.listeners.{CoinGeckoListener, CryptoApiListenerFMS}
 import utils.constants.TradeAction.PRINT
 
 object Main extends App{
@@ -20,11 +21,14 @@ object Main extends App{
 
     val priceGraph: PriceGraphActor = PriceGraphActor("MainGraphActor", system)
     val priceGraphActor = priceGraph.graph
-    val listener = system.actorOf(Props(classOf[CoinGeckoListener], priceGraphActor), "CoinGeckoListener")
-
-    listener ! CoinGeckoListener.Start(2)
+    val listener = system.actorOf(Props(classOf[CryptoApiListenerFMS], priceGraphActor), "CoinGeckoListener")
+    listener ! Initialize(2)
     Thread.sleep(20000)
-    listener ! CoinGeckoListener.Stop
+    listener ! Stop
+//    val listener = system.actorOf(Props(classOf[CoinGeckoListener], priceGraphActor), "CoinGeckoListener")
+//    listener ! CoinGeckoListener.Start(2)
+//    Thread.sleep(20000)
+//    listener ! CoinGeckoListener.Stop
     priceGraph.trader ! PRINT
 }
 
