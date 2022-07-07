@@ -1,4 +1,4 @@
-package graphs.actors
+package graphs.actors.traders
 
 import akka.actor.{Actor, ActorLogging}
 import utils.constants.TradeAction.{BUY, PRINT, SELL}

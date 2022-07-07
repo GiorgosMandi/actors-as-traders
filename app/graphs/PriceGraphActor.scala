@@ -4,7 +4,7 @@ import akka.Done
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{CompletionStrategy, OverflowStrategy}
-import graphs.actors.SimpleTrader
+import graphs.actors.traders.SimpleTrader
 import models.CoinGeckoResponse
 
 import scala.language.postfixOps
