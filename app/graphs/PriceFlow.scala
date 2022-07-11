@@ -1,21 +1,17 @@
 package graphs
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.FlowShape
 import akka.stream.scaladsl.GraphDSL.Implicits._
-import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Sink, Source, Zip}
-import akka.stream.{CompletionStrategy, FlowShape, OverflowStrategy}
-import akka.{Done, NotUsed}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Zip}
 import decisionMakers.RandomDecider
-import graphs.actors.traders.SimpleTrader
 import models.CoinGeckoResponse
 import utils.constants.TradeAction.{TradeActionT, elect}
 
 import scala.language.postfixOps
 
-case class PriceGraphActor(name: String, implicit val system: ActorSystem) {
-
-    val graph: ActorRef = this.createGraph()
-    val trader: ActorRef = system.actorOf(Props[SimpleTrader](), "SimpleTrader")
+object PriceFlow {
 
     val decisionMakerFlow: Flow[CoinGeckoResponse, TradeActionT, NotUsed] =
         Flow.fromGraph(GraphDSL.create() { implicit builder =>
@@ -35,7 +31,7 @@ case class PriceGraphActor(name: String, implicit val system: ActorSystem) {
             FlowShape(broadcast.in, makeDecisionFlow.out)
         })
 
-    val priceFlow: Flow[CoinGeckoResponse, (TradeActionT, CoinGeckoResponse), NotUsed] =
+    val flow: Flow[CoinGeckoResponse, (TradeActionT, CoinGeckoResponse), NotUsed] =
         Flow.fromGraph(GraphDSL.create() { implicit builder =>
 
             val broadcast = builder.add(Broadcast[CoinGeckoResponse](2))
@@ -46,20 +42,4 @@ case class PriceGraphActor(name: String, implicit val system: ActorSystem) {
             broadcast.out(1) ~> zip.in1
             FlowShape(broadcast.in, zip.out)
         })
-
-    private def createGraph(): ActorRef = {
-        val sourceRef: Source[CoinGeckoResponse, ActorRef] = Source.actorRef(
-            completionMatcher = {
-                case Done => CompletionStrategy.immediately
-            },
-            failureMatcher = PartialFunction.empty,
-            bufferSize = 100,
-            overflowStrategy = OverflowStrategy.dropHead
-        )
-
-        sourceRef
-          .via(priceFlow)
-          .to(Sink.foreach { case (tradeAction, response) => trader ! (tradeAction, response.price) })
-          .run()
-    }
 }

@@ -12,7 +12,7 @@ import models.CoinGeckoResponse
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, ListenerData] with Timers {
+class CryptoApiListenerFMS extends FSM[ListenerState, ListenerData] with Timers {
 
     implicit val system: ActorSystem = context.system
 
@@ -25,10 +25,10 @@ class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, Listener
     val coinGeckoRequest: HttpRequest = HttpRequest(uri = requestUrl)
     val http: HttpExt = Http(system)
 
-    startWith(Idle, EmptyState)
+    startWith(Idle, Empty)
 
     when(Idle) {
-        case Event(Initialize(delay), EmptyState) =>
+        case Event(Initialize(delay), Empty) =>
             timers.startTimerWithFixedDelay(ListenerKey, Request, delay second)
             goto(Operational)
         case x =>
@@ -37,12 +37,12 @@ class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, Listener
     }
 
     when(Operational) {
-        case Event(Request, EmptyState) =>
+        case Event(Request, Empty) =>
             log.warning("Send Request")
             http.singleRequest(coinGeckoRequest).pipeTo(self)
             stay()
 
-        case Event(HttpResponse(StatusCodes.OK, headers, entity, _), EmptyState) =>
+        case Event(HttpResponse(StatusCodes.OK, headers, entity, _), Empty) =>
             log.warning("Received Response")
             val futureBody = entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(body => body.utf8String)
             futureBody.map { body: String =>
@@ -50,11 +50,11 @@ class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, Listener
                   .map(json => json \\ cryptoId)
                   .map(jsons => jsons.head)
                   .map(json => json.as[CoinGeckoResponse]
-                    .foreach(cgResponse => trader ! cgResponse)
+                    .foreach(cgResponse => sender() ! cgResponse)
                   )
             }
             stay()
-        case Event(resp@HttpResponse(code, _, _, _), EmptyState) =>
+        case Event(resp@HttpResponse(code, _, _, _), Empty) =>
             log.warning("Request failed, response code: " + code)
             resp.discardEntityBytes()
             stay()
@@ -76,10 +76,13 @@ object CryptoApiListenerFMS {
     case object Operational extends ListenerState
 
     trait ListenerData
-    case object EmptyState extends ListenerData
-    case class Initialize(delay: Int) extends ListenerData
-    case object Request extends ListenerData
-    case object Stop extends ListenerData
+    case object Empty extends ListenerData
+
+    case class ListenerMessages() extends ListenerData
+    case class Initialize(delay: Int) extends ListenerMessages
+    case object Request extends ListenerMessages
+    case object Stop extends ListenerMessages
+    case object ACK extends ListenerMessages
 }
 
 

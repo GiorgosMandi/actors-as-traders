@@ -1,6 +1,7 @@
 package graphs.actors.traders
 
 import akka.actor.{Actor, ActorLogging}
+import graphs.actors.traders.SimpleTrader.{ACK, Fail, Init, Terminate}
 import utils.constants.TradeAction.{BUY, PRINT, SELL}
 
 class SimpleTrader extends Actor with ActorLogging {
@@ -11,7 +12,13 @@ class SimpleTrader extends Actor with ActorLogging {
     val PROFIT_BASE = 10f
 
 
-    override def receive: Receive = trade(INITIAL_CAPITAL, 0f, Nil)
+    override def receive: Receive = {
+        case Init =>
+            sender() ! ACK
+            trade(INITIAL_CAPITAL, 0f, Nil)
+        case Fail(ex) =>
+            log.warning(s"Stream Failed: $ex")
+    }
 
     def trade(capital: Double, deposits: Double, orders: List[(Double, Double)]): Receive = {
         /**
@@ -26,6 +33,7 @@ class SimpleTrader extends Actor with ActorLogging {
 
             log.warning(s"BUYING: $newOrder")
             context.become(trade(capitalAfterOrder, deposits, newOrder :: orders))
+            sender() ! ACK
 
         case (SELL, price: Double) =>
             /**
@@ -46,10 +54,22 @@ class SimpleTrader extends Actor with ActorLogging {
             val depositedCapital = depositCapital(newCapital, MAX_CAPITAL, MIN_DEPOSIT)
             val newDeposits = deposits + depositedProfit + depositedCapital
             context.become(trade(newCapital-depositedCapital, newDeposits, rest))
+            sender() ! ACK
 
         case PRINT =>
-            log.warning(s"\n---\nCapital: $capital\nDeposits: $deposits\nExisting Purchases: $orders\n----")
+            print(capital, deposits, orders)
+            sender() ! ACK
+
+        case Fail(ex) =>
+            log.warning(s"Stream Failed: $ex")
+        case Terminate =>
+            print(capital, deposits, orders)
+            sender() ! ACK
+            context.unbecome()
     }
+
+    def print(capital: Double, deposits: Double, orders: List[(Double, Double)]): Unit =
+        log.warning(s"\n---\nCapital: $capital\nDeposits: $deposits\nExisting Purchases: $orders\n----")
 
     def depositProfit(profit: Double, base: Double, minDeposit: Double): Double = {
         val ratio = profit/ (profit+base)
@@ -65,4 +85,11 @@ class SimpleTrader extends Actor with ActorLogging {
         else
             0f
     }
+}
+
+object SimpleTrader{
+    case object Init
+    case object ACK
+    case object Terminate
+    case class Fail(ex: Throwable)
 }
