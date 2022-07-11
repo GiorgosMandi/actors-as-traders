@@ -1,7 +1,7 @@
 package decisionMakers
 
 import models.CoinGeckoResponse
-import utils.constants.TradeActionT
+import utils.constants.TradeAction.TradeActionT
 
 trait DecisionMaker {
 

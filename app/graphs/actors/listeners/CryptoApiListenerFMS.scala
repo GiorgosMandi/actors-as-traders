@@ -5,14 +5,17 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.pipe
 import akka.util.ByteString
+import graphs.actors.listeners.CryptoApiListenerFMS._
 import io.circe.parser.parse
 import models.CoinGeckoResponse
 
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
-class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, ListenerData] with Timers{
+class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, ListenerData] with Timers {
 
     implicit val system: ActorSystem = context.system
+
     import context.dispatcher
 
     val cryptoId = "ethereum"
@@ -66,6 +69,8 @@ class CryptoApiListenerFMS(trader: ActorRef) extends FSM[ListenerState, Listener
 }
 
 object CryptoApiListenerFMS {
+    case object ListenerKey
+
     trait ListenerState
     case object Idle extends ListenerState
     case object Operational extends ListenerState

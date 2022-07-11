@@ -2,7 +2,7 @@ package decisionMakers
 
 import models.CoinGeckoResponse
 import utils.constants.TradeAction.{BUY, OMIT, SELL}
-import utils.constants.TradeActionT
+import utils.constants.TradeAction.TradeActionT
 
 import scala.util.Random
 
