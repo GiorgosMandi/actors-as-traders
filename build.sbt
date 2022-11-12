@@ -3,32 +3,35 @@ ThisBuild / scalaVersion := "2.13.8"
 ThisBuild / version := "1.0-SNAPSHOT"
 
 lazy val root = (project in file("."))
-  .enablePlugins(PlayScala)
   .settings(
-    name := """ScalaHFT""",
-    libraryDependencies ++= Seq(
-      guice,
-      "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0" % Test
-    )
+      name := "ScalaHFT"
   )
 
-// Akka Essentials
-val akkaVersion ="2.6.17"
-// https://mvnrepository.com/artifact/com.typesafe.akka/akka-actor
-libraryDependencies += "com.typesafe.akka" %% "akka-actor" % akkaVersion
-// https://mvnrepository.com/artifact/com.typesafe.akka/akka-testkit
-libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % akkaVersion
+val akkaVersion = "2.7.0"
+val akkaHttpVersion = "10.4.0"
 
+// Akka Essentials
+libraryDependencies += "com.typesafe.akka" %% "akka-actor" % akkaVersion
+libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % akkaVersion
 
 // Akka Streams
 libraryDependencies += "com.typesafe.akka" %% "akka-stream" % akkaVersion
 libraryDependencies += "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion
 
+
+libraryDependencies += "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
+libraryDependencies += "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion
+libraryDependencies += "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion
+
+// Logging
+libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % akkaVersion
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.11"
+
+
 // Alpakka
 libraryDependencies ++= Seq(
-  "com.lightbend.akka" %% "akka-stream-alpakka-csv" % "3.0.4",
-  "com.typesafe.akka" %% "akka-stream" % akkaVersion
+//  "com.lightbend.akka" %% "akka-stream-alpakka-csv" % "3.0.4",
 )
 
-val circeVersion = "0.14.1"
-libraryDependencies += "io.circe" %% "circe-parser" % circeVersion
+//val circeVersion = "0.14.1"
+//libraryDependencies += "io.circe" %% "circe-parser" % circeVersion
