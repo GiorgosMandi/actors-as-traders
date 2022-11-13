@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging}
 import gr.gm.industry.utils.constants.TradeActions.{BUY, PRINT, SELL}
 
 class SimpleTrader extends Actor with ActorLogging {
+    import SimpleTrader.{Terminate, Fail, ACK}
 
     val MIN_DEPOSIT = 5f
     val MAX_CAPITAL = 300f
@@ -25,6 +26,7 @@ class SimpleTrader extends Actor with ActorLogging {
 
             log.warning(s"BUYING: $newOrder")
             context.become(trade(capitalAfterOrder, deposits, newOrder :: orders))
+            sender() ! ACK
 
         case (SELL, price: BigDecimal) =>
             /**
@@ -45,9 +47,18 @@ class SimpleTrader extends Actor with ActorLogging {
             val depositedCapital = depositCapital(newCapital, MAX_CAPITAL, MIN_DEPOSIT)
             val newDeposits = deposits + depositedProfit + depositedCapital
             context.become(trade(newCapital-depositedCapital, newDeposits, rest))
+            sender() ! ACK
 
         case PRINT =>
-            log.warning(s"\n---\nCapital: $capital\nDeposits: $deposits\nExisting Purchases: $orders\n----")
+            print(capital, deposits, orders)
+            sender() ! ACK
+
+        case Fail(ex) =>
+            log.warning(s"Stream Failed: $ex")
+        case Terminate =>
+            print(capital, deposits, orders)
+            sender() ! ACK
+            context.unbecome()
     }
 
     def depositProfit(profit: BigDecimal, base: BigDecimal, minDeposit: BigDecimal): BigDecimal = {
@@ -64,4 +75,11 @@ class SimpleTrader extends Actor with ActorLogging {
         else
             0f
     }
+}
+
+object SimpleTrader{
+    case object Init
+    case object ACK
+    case object Terminate
+    case class Fail(ex: Throwable)
 }
