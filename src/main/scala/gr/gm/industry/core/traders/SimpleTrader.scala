@@ -1,14 +1,16 @@
 package gr.gm.industry.core.traders
 
-import akka.actor.{Actor, ActorLogging}
-import gr.gm.industry.model.dao.Order
-import gr.gm.industry.utils.Constants.ETH
-import gr.gm.industry.utils.TradeActions.{BUY, PRINT, SELL, buy}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import gr.gm.industry.api.BinanceWebClient
+import gr.gm.industry.model.dao.Order.{BuyOrder, Order}
+import gr.gm.industry.utils.Constants.{ACK, ETH}
+import gr.gm.industry.utils.TradeActions.{BUY, PRINT, SELL}
 
 import java.util.UUID
 
 class SimpleTrader extends Actor with ActorLogging {
-    import SimpleTrader.{Terminate, Fail, ACK}
+
+    import SimpleTrader.{Fail, Terminate}
 
     val MIN_DEPOSIT = 5f
     val MAX_CAPITAL = 300f
@@ -16,24 +18,26 @@ class SimpleTrader extends Actor with ActorLogging {
     val PROFIT_BASE = 10f
     val BUY_RATIO_TO_CAPITAL = .2f
 
+    val brokerActor: ActorRef = context.system.actorOf(Props[BinanceWebClient], "BinanceWebClientActor")
+
     override def receive: Receive = trade(INITIAL_CAPITAL, 0f, Map())
 
     def trade(capital: BigDecimal, deposits: BigDecimal, orders: Map[UUID, Order]): Receive = {
         /**
          * In case of a BUY, extract 20% of the current capital
-         *  and place an order. An order is defined as the
-         *  size of the investment and the given price
+         * and place an order. An order is defined as the
+         * size of the investment and the given price
          */
         case (BUY, price: BigDecimal) =>
-            val quantity = capital * BUY_RATIO_TO_CAPITAL
-            val capitalAfterOrder = capital - quantity
-            val order = buy(price, quantity, ETH)
-
-            log.info(order.toString)
-            context.become(trade(capitalAfterOrder, deposits, orders + (order.id -> order)))
+            val investment = capital * BUY_RATIO_TO_CAPITAL
+            val capitalAfterOrder = capital - investment
+            val buyOrder = BuyOrder(investment, ETH, price)
+            brokerActor ! buyOrder
+            context.become(trade(capitalAfterOrder, deposits, orders + (buyOrder.id -> buyOrder)))
             sender() ! ACK
 
         case (SELL, price: BigDecimal) =>
+
             /**
              * When we SELL, first we find the orders which are profitable if we sell them
              * with the given price. Then we compute the profit, based on the differences
@@ -49,7 +53,7 @@ class SimpleTrader extends Actor with ActorLogging {
             val newCapital = previousInvestments + capital
             val depositedCapital = depositCapital(newCapital, MAX_CAPITAL, MIN_DEPOSIT)
             val newDeposits = deposits + depositedCapital
-            context.become(trade(newCapital-depositedCapital, newDeposits, rest))
+            context.become(trade(newCapital - depositedCapital, newDeposits, rest))
             sender() ! ACK
 
         case PRINT =>
@@ -65,13 +69,13 @@ class SimpleTrader extends Actor with ActorLogging {
     }
 
     def depositProfit(profit: BigDecimal, base: BigDecimal, minDeposit: BigDecimal): BigDecimal = {
-        val ratio = profit/ (profit+base)
-        val deposit =  ratio*profit
+        val ratio = profit / (profit + base)
+        val deposit = ratio * profit
         if (deposit > minDeposit) deposit else 0f
     }
 
-    def depositCapital(capital: BigDecimal, maxCapital: BigDecimal, minDeposit: BigDecimal): BigDecimal ={
-        if (capital > maxCapital){
+    def depositCapital(capital: BigDecimal, maxCapital: BigDecimal, minDeposit: BigDecimal): BigDecimal = {
+        if (capital > maxCapital) {
             val capitalBase = maxCapital * .5
             depositProfit(capital, capitalBase, minDeposit)
         }
@@ -80,9 +84,10 @@ class SimpleTrader extends Actor with ActorLogging {
     }
 }
 
-object SimpleTrader{
+object SimpleTrader {
     case object Init
-    case object ACK
+
     case object Terminate
+
     case class Fail(ex: Throwable)
 }

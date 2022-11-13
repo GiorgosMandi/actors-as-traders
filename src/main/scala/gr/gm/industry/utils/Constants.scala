@@ -2,6 +2,8 @@ package gr.gm.industry.utils
 
 object Constants {
 
+    case object ACK
+
     sealed trait Coin{
         val name = ""
     }
