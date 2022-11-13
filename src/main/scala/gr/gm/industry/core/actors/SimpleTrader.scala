@@ -1,4 +1,4 @@
-package gr.gm.industry.graphs.actors
+package gr.gm.industry.core.actors
 
 import akka.actor.{Actor, ActorLogging}
 import gr.gm.industry.utils.constants.TradeActions.{BUY, PRINT, SELL}

@@ -1,4 +1,4 @@
-package gr.gm.industry.listeners
+package gr.gm.industry.core.source
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Timers}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
@@ -6,8 +6,8 @@ import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.pipe
 import akka.util.ByteString
 //import io.circe.parser.parse
-import gr.gm.industry.dao.CoinGeckoResponse
 
+import gr.gm.industry.model.dao.CoinGeckoResponse
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 

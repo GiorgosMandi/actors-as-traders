@@ -1,7 +1,6 @@
-package gr.gm.industry.dao
+package gr.gm.industry.model.dao
 
-import gr.gm.industry.dto.PriceDto
-
+import gr.gm.industry.model.dto.PriceDto
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import scala.math.BigDecimal.RoundingMode

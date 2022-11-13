@@ -1,13 +1,13 @@
-package gr.gm.industry.graphs
+package gr.gm.industry.core.flow
 
 import akka.NotUsed
 import akka.stream.FlowShape
-import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Zip}
-import gr.gm.industry.deciders.RandomDecider
-import gr.gm.industry.dao.{CoinGeckoResponse, PriceDao}
+import gr.gm.industry.core.deciders.RandomDecider
+import gr.gm.industry.model.dao.PriceDao
 import gr.gm.industry.utils.constants.TradeActions
 import gr.gm.industry.utils.constants.TradeActions.TradeAction
+import akka.stream.scaladsl.GraphDSL.Implicits._
 
 object PriceFlow {
 

@@ -3,9 +3,9 @@ package gr.gm.industry
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.{Config, ConfigFactory}
-import gr.gm.industry.graphs.PriceFlow
-import gr.gm.industry.graphs.actors.SimpleTrader
-import gr.gm.industry.listeners.BinanceListener
+import gr.gm.industry.core.actors.SimpleTrader
+import gr.gm.industry.core.flow.PriceFlow
+import gr.gm.industry.core.source.BinanceListener
 
 object App extends App {
 
@@ -14,9 +14,6 @@ object App extends App {
     val priceSource = BinanceListener(parallelism = 5, throttle = (2, 1))
     val priceFlow = PriceFlow.priceFlow
     val trader: ActorRef = system.actorOf(Props[SimpleTrader], "SimpleTrader")
-
-
-
 
     priceSource.apply
       .via(priceFlow)

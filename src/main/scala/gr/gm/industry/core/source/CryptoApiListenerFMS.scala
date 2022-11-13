@@ -1,13 +1,13 @@
-package gr.gm.industry.listeners
+package gr.gm.industry.core.source
 
-import akka.actor.{ActorRef, ActorSystem, FSM, Timers}
+import akka.actor.{ActorSystem, FSM, Timers}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.pipe
 import akka.util.ByteString
-import gr.gm.industry.dao.CoinGeckoResponse
-import gr.gm.industry.listeners.CoinGeckoListener.ListenerKey
-import gr.gm.industry.listeners.CryptoApiListenerFMS._
+import gr.gm.industry.core.source.CoinGeckoListener.ListenerKey
+import gr.gm.industry.core.source.CryptoApiListenerFMS._
+import gr.gm.industry.model.dao.CoinGeckoResponse
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
