@@ -4,7 +4,7 @@ import akka.Done
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{CompletionStrategy, OverflowStrategy}
-import gr.gm.industry.dao.{CoinGeckoResponse, PriceDao}
+import gr.gm.industry.dao.PriceDao
 import gr.gm.industry.graphs.actors.SimpleTrader
 
 import scala.language.postfixOps

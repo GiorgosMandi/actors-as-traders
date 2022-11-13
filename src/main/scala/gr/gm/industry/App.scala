@@ -16,6 +16,8 @@ object App extends App {
     val trader: ActorRef = system.actorOf(Props[SimpleTrader], "SimpleTrader")
 
 
+
+
     priceSource.apply
       .via(priceFlow)
       .to(Sink.foreach { case (tradeAction, priceDao) => trader ! (tradeAction, priceDao.price) })
