@@ -1,7 +1,11 @@
-package gr.gm.industry.core.actors
+package gr.gm.industry.core.traders
 
 import akka.actor.{Actor, ActorLogging}
-import gr.gm.industry.utils.constants.TradeActions.{BUY, PRINT, SELL}
+import gr.gm.industry.model.dao.Order
+import gr.gm.industry.utils.Constants.ETH
+import gr.gm.industry.utils.TradeActions.{BUY, PRINT, SELL, buy}
+
+import java.util.UUID
 
 class SimpleTrader extends Actor with ActorLogging {
     import SimpleTrader.{Terminate, Fail, ACK}
@@ -10,22 +14,23 @@ class SimpleTrader extends Actor with ActorLogging {
     val MAX_CAPITAL = 300f
     val INITIAL_CAPITAL = 100f
     val PROFIT_BASE = 10f
+    val BUY_RATIO_TO_CAPITAL = .2f
 
-    override def receive: Receive = trade(INITIAL_CAPITAL, 0f, Nil)
+    override def receive: Receive = trade(INITIAL_CAPITAL, 0f, Map())
 
-    def trade(capital: BigDecimal, deposits: BigDecimal, orders: List[(BigDecimal, BigDecimal)]): Receive = {
+    def trade(capital: BigDecimal, deposits: BigDecimal, orders: Map[UUID, Order]): Receive = {
         /**
          * In case of a BUY, extract 20% of the current capital
          *  and place an order. An order is defined as the
          *  size of the investment and the given price
          */
         case (BUY, price: BigDecimal) =>
-            val investment = capital * .2
-            val capitalAfterOrder = capital - investment
-            val newOrder = (price, investment)
+            val quantity = capital * BUY_RATIO_TO_CAPITAL
+            val capitalAfterOrder = capital - quantity
+            val order = buy(price, quantity, ETH)
 
-            log.warning(s"BUYING: $newOrder")
-            context.become(trade(capitalAfterOrder, deposits, newOrder :: orders))
+            log.info(order.toString)
+            context.become(trade(capitalAfterOrder, deposits, orders + (order.id -> order)))
             sender() ! ACK
 
         case (SELL, price: BigDecimal) =>
@@ -34,18 +39,16 @@ class SimpleTrader extends Actor with ActorLogging {
              * with the given price. Then we compute the profit, based on the differences
              * of the BUY-ing price and the SELLing price.
              */
-            val (profitablePurchases, rest) = orders.partition(_._1 < price)
-            val previousInvestments = profitablePurchases.map(_._2).sum
+            val (profitablePurchases, rest) = orders.partition { case (_, order) => order.price < price }
+            val previousInvestments = profitablePurchases.map(_._2.investment).sum
             val profit = profitablePurchases
-              .map { case (previousPrice, investment) => (price * investment) - (previousPrice * investment) }
+              .map { case (_, order) => (price * order.investment) - (order.price * order.investment) }
               .sum
             log.warning(s"SELLING: PROFIT: $profit")
 
-            val depositedProfit = depositProfit(profit, PROFIT_BASE, MIN_DEPOSIT)
-            val capitalizedProfit = profit - depositedProfit
-            val newCapital = previousInvestments + capitalizedProfit + capital
+            val newCapital = previousInvestments + capital
             val depositedCapital = depositCapital(newCapital, MAX_CAPITAL, MIN_DEPOSIT)
-            val newDeposits = deposits + depositedProfit + depositedCapital
+            val newDeposits = deposits + depositedCapital
             context.become(trade(newCapital-depositedCapital, newDeposits, rest))
             sender() ! ACK
 

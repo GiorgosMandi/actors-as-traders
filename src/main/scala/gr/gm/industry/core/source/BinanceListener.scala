@@ -10,8 +10,7 @@ import akka.stream.scaladsl.Source
 import gr.gm.industry.model.dao
 import gr.gm.industry.model.dao.PriceDao
 import gr.gm.industry.model.dto.PriceDto
-import gr.gm.industry.utils.constants.Constants.Coin.ETH
-import gr.gm.industry.utils.constants.Constants.Currency.EUR
+import gr.gm.industry.utils.Constants.{ETH, EUR}
 
 import scala.concurrent.duration._
 
@@ -20,7 +19,7 @@ case class BinanceListener(parallelism: Int, throttle: (Int, Int)) {
 
     val binanceRequest: HttpRequest = HttpRequest(
         method = HttpMethods.GET,
-        uri = Uri(BINANCE_URL).withQuery(Query("symbol" -> s"$ETH$EUR"))
+        uri = Uri(BINANCE_URL).withQuery(Query("symbol" -> s"${ETH.name}${EUR.name}"))
     )
 
     def apply(implicit system: ActorSystem): Source[PriceDao, NotUsed] =

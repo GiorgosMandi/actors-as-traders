@@ -3,7 +3,7 @@ package gr.gm.industry
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.{Config, ConfigFactory}
-import gr.gm.industry.core.actors.SimpleTrader
+import gr.gm.industry.core.traders.SimpleTrader
 import gr.gm.industry.core.flow.PriceFlow
 import gr.gm.industry.core.source.BinanceListener
 

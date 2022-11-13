@@ -1,7 +1,7 @@
 package gr.gm.industry.core.deciders
 
 import gr.gm.industry.model.dao.PriceDao
-import gr.gm.industry.utils.constants.TradeActions.{BUY, OMIT, SELL, TradeAction}
+import gr.gm.industry.utils.TradeActions.{BUY, OMIT, SELL, TradeAction}
 
 import scala.util.Random
 

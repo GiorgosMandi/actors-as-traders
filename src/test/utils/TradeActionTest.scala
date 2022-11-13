@@ -2,7 +2,6 @@ package utils
 
 import org.scalatest.flatspec.AnyFlatSpec
 import utils.constants.TradeAction
-import gr.gm.industry.utils.constants.TradeActions.{BUY, OMIT, SELL}
 
 class TradeActionTest extends AnyFlatSpec {
 
