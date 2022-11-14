@@ -42,11 +42,12 @@ class SimpleTrader extends Actor with ActorLogging {
              * When we SELL, first we find the orders which are profitable if we sell them
              * with the given price. Then we compute the profit, based on the differences
              * of the BUY-ing price and the SELLing price.
+             * TODO: sell message broker
              */
             val (profitablePurchases, rest) = orders.partition { case (_, order) => order.price < price }
-            val previousInvestments = profitablePurchases.map(_._2.investment).sum
+            val previousInvestments = profitablePurchases.map(_._2.quantity).sum
             val profit = profitablePurchases
-              .map { case (_, order) => (price * order.investment) - (order.price * order.investment) }
+              .map { case (_, order) => (price * order.quantity) - (order.price * order.quantity) }
               .sum
             log.warning(s"SELLING: PROFIT: $profit")
 

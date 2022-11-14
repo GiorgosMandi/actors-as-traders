@@ -7,6 +7,7 @@ import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.http.scaladsl.{Http, HttpExt}
 import gr.gm.industry.model.dao.Order.Order
 import gr.gm.industry.model.dao.PriceDao
+import gr.gm.industry.model.dao.PriceDao.PriceError
 import gr.gm.industry.model.dto.PriceDto
 import gr.gm.industry.utils.Constants.{ACK, Coin, Currency}
 
@@ -51,7 +52,7 @@ class BinanceWebClient extends Actor with ActorLogging {
 object BinanceWebClient {
     val BINANCE_URL = "https://www.binance.com/api/v3/ticker"
 
-    def getPrice(coin: Coin, currency: Currency)(implicit system: ActorSystem): Future[PriceDao] = {
+    def getPrice(coin: Coin, currency: Currency)(implicit system: ActorSystem): Future[Either[PriceError, PriceDao]] = {
         import system.dispatcher
         val http: HttpExt = Http()
         val request: HttpRequest = HttpRequest(

@@ -15,4 +15,13 @@ case class BinanceListener(parallelism: Int, throttle: (Int, Int)) {
         Source.repeat(BinanceWebClient.getPrice(ETH, EUR))
           .throttle(throttle._1, throttle._2.seconds)
           .mapAsync(parallelism)(p => p)
+          .map {
+              case Right(price) =>
+                  Some(price)
+              case Left(priceError) =>
+                  system.log.warning(s"Received price error: $priceError")
+                  None
+          }
+          .filter(_.isDefined)
+          .map(_.get)
 }

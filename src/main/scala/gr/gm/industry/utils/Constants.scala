@@ -20,6 +20,11 @@ object Constants {
         override val name = "ADA"
     }
 
+    object Coin {
+        val options: Map[String, Coin] = List(ADA, ETH, BTC).map(c => c.name -> c).toMap
+        def get(name: String): Option[Coin] = options.get(name)
+    }
+
     sealed trait Currency {
         val name = ""
     }
@@ -31,5 +36,12 @@ object Constants {
     case object DOL extends Currency {
         override val name = "DOL"
     }
+
+    object Currency {
+        val options: Map[String, Currency] = List(EUR, DOL).map(c => c.name -> c).toMap
+
+        def get(name: String): Option[Currency] = options.get(name)
+    }
+
 }
 
