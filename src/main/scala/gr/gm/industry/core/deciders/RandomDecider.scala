@@ -1,17 +1,17 @@
 package gr.gm.industry.core.deciders
 
+import gr.gm.industry.core.traders.NaivePendingTrader.{Buy, Omit, Sell, TraderEvent}
 import gr.gm.industry.model.dao.PriceDao
-import gr.gm.industry.utils.TradeActions.{BUY, OMIT, SELL, TradeAction}
 
 import scala.util.Random
 
 object RandomDecider extends DecisionMaker {
 
-    def decide(price: PriceDao): TradeAction = {
+    def decide(price: PriceDao): TraderEvent = {
         new Random(System.currentTimeMillis).nextInt() % 6 match {
-            case 1 => BUY
-            case 2 => SELL
-            case _ => OMIT
+            case 1 => Buy(price)
+            case 2 => Sell(price)
+            case _ => Omit
         }
     }
 }

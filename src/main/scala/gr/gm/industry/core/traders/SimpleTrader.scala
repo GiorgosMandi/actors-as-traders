@@ -1,7 +1,7 @@
 package gr.gm.industry.core.traders
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import gr.gm.industry.api.BinanceWebClient
+import gr.gm.industry.api.BinanceWebClientActor
 import gr.gm.industry.model.dao.Order.{BuyOrder, Order}
 import gr.gm.industry.utils.Constants.{ACK, ETH}
 import gr.gm.industry.utils.TradeActions.{BUY, PRINT, SELL}
@@ -18,7 +18,7 @@ class SimpleTrader extends Actor with ActorLogging {
     val PROFIT_BASE = 10f
     val BUY_RATIO_TO_CAPITAL = .2f
 
-    val brokerActor: ActorRef = context.system.actorOf(Props[BinanceWebClient], "BinanceWebClientActor")
+    val brokerActor: ActorRef = context.system.actorOf(Props[BinanceWebClientActor], "BinanceWebClientActor")
 
     override def receive: Receive = trade(INITIAL_CAPITAL, 0f, Map())
 

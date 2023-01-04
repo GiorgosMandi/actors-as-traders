@@ -8,7 +8,7 @@ import java.text.SimpleDateFormat
 import scala.math.BigDecimal.RoundingMode
 
 case class PriceDao(coin: Coin, currency: Currency, price: BigDecimal, timestamp: String){
-    override def toString: String = s"$timestamp - $coin: $price $currency"
+    override def toString: String = s"Coin: $coin: Price: $price $currency"
 }
 
 object PriceDao {

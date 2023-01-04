@@ -1,5 +1,7 @@
 package gr.gm.industry.utils
 
+import gr.gm.industry.core.traders.NaivePendingTrader.TraderEvent
+
 object TradeActions {
 
     sealed trait TradeAction
@@ -20,11 +22,12 @@ object TradeActions {
 
     case object PRINT extends TradeAction
 
-    def elect(tradeActions: Product): TradeAction = {
-        val tradeActionsList = tradeActions.productIterator.map(_.asInstanceOf[TradeAction]).toList
-        val votes = tradeActionsList.foldLeft(Map[TradeAction, Int]().withDefaultValue(0)) {
-            case (acc, letter) => acc + (letter -> (1 + acc(letter)))
-        }
+    def elect(tradeActions: Product): TraderEvent = {
+        val tradeActionsList = tradeActions.productIterator.map(_.asInstanceOf[TraderEvent]).toList
+        val votes = tradeActionsList
+          .foldLeft(Map[TraderEvent, Int]().withDefaultValue(0)) {
+              case (acc, letter) => acc + (letter -> (1 + acc(letter)))
+          }
         votes.maxBy(_._2)._1
     }
 }
