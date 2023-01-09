@@ -36,18 +36,18 @@ object BinanceWebClientActor {
 
   sealed trait WebClientRequest
 
-  case class OrderRequest(order: Order) extends WebClientRequest
+  case class OrderRequest(order: Order, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
 
-  case class OrderRequestResponse(order: Order) extends WebClientRequest
+  case class OrderRequestResponse(order: Order, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
 
-  case class OrderRequestErrorResponse(error: String, id: UUID) extends WebClientRequest
+  case class OrderRequestErrorResponse(error: String, id: UUID, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
 
 
-  case class PriceRequest(coin: Coin, currency: Currency) extends WebClientRequest
+  case class PriceRequest(coin: Coin, currency: Currency, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
 
-  case class PriceRequestResponse(price: PriceDao) extends WebClientRequest
+  case class PriceRequestResponse(price: PriceDao, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
 
-  case class PriceRequestErrorResponse(error: PriceError) extends WebClientRequest
+  case class PriceRequestErrorResponse(error: PriceError, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
 
 
   def fetchPrice(coin: Coin, currency: Currency): Future[Either[PriceError, PriceDao]] = {
@@ -70,50 +70,50 @@ object BinanceWebClientActor {
     }
   }
 
-  def apply(replyTo: ActorRef[WebClientResponse]): Behavior[WebClientRequest] =
+  def apply(): Behavior[WebClientRequest] =
     Behaviors.setup { context =>
 
-        def handleFutureOrder(orderId: UUID)(tOrder: Try[Order]): WebClientRequest = {
+        def handleFutureOrder(orderId: UUID, replyTo: ActorRef[WebClientResponse])(tOrder: Try[Order]): WebClientRequest = {
           tOrder match {
             case Success(order) =>
-              OrderRequestResponse(order)
+              OrderRequestResponse(order, replyTo)
             case Failure(reason) =>
               context.log.error(s"Order failed: $reason")
-              OrderRequestErrorResponse(reason.toString, orderId)
+              OrderRequestErrorResponse(reason.toString, orderId, replyTo)
           }
         }
 
       def handlingRequests(): Behavior[WebClientRequest] = Behaviors.receiveMessage {
-        case OrderRequest(order) =>
+        case OrderRequest(order, replyTo) =>
           val futureOrder = placeOrder(order)(dispatcher)
-          context.pipeToSelf(futureOrder) (handleFutureOrder(order.id))
+          context.pipeToSelf(futureOrder) (handleFutureOrder(order.id, replyTo))
           Behaviors.same
 
-        case OrderRequestResponse(order) =>
+        case OrderRequestResponse(order, replyTo) =>
             replyTo ! OrderFulfilled(order.id)
             Behaviors.same
 
-        case OrderRequestErrorResponse(msg, orderId) =>
+        case OrderRequestErrorResponse(msg, orderId, replyTo) =>
             context.log.warn(s"Order failed with message: $msg")
             replyTo ! OrderFailed(orderId)
             Behaviors.same
 
-        case PriceRequest(coin, currency) =>
+        case PriceRequest(coin, currency, replyTo) =>
           val futurePrice = fetchPrice(coin, currency)
           context.pipeToSelf(futurePrice) {
             case Success(either) =>
               either match {
-                case Left(error) => PriceRequestErrorResponse(error)
-                case Right(price) => PriceRequestResponse(price)
+                case Left(error) => PriceRequestErrorResponse(error, replyTo)
+                case Right(price) => PriceRequestResponse(price, replyTo)
               }
           }
           Behaviors.same
 
-        case PriceRequestResponse(price) =>
+        case PriceRequestResponse(price, replyTo) =>
           replyTo ! PriceResponse(price)
           Behaviors.same
 
-        case PriceRequestErrorResponse(error) =>
+        case PriceRequestErrorResponse(error, replyTo) =>
           context.log.warn(s"Received a price error: ${error.message}")
           Behaviors.same
       }

@@ -62,7 +62,7 @@ object NaivePendingTrader {
     (context, event) =>
 
       val messageAdapter: ActorRef[WebClientResponse] = context.messageAdapter(rsp => OrderResponse(rsp))
-      val brokerActor: ActorRef[WebClientRequest] = context.spawn(BinanceWebClientActor(messageAdapter), "BinanceWebClientActor")
+      val brokerActor: ActorRef[WebClientRequest] = context.spawn(BinanceWebClientActor(), "BinanceWebClientActor")
 
       event match {
         case Buy(priceDao: PriceDao) =>
@@ -71,7 +71,7 @@ object NaivePendingTrader {
           val capitalAfterOrder = state.capital - investment
           context.log.info(s"Received a BUY order: $priceDao ")
           val buyOrder = BuyOrder(investment, priceDao.coin, priceDao.price)
-          brokerActor ! BinanceWebClientActor.OrderRequest(buyOrder)
+          brokerActor ! BinanceWebClientActor.OrderRequest(buyOrder, messageAdapter)
           val newBudget = TransactionState(capitalAfterOrder, state.activePurchases, state.executedOrders)
           pendingBuying(buyOrder, newBudget)
 
@@ -88,12 +88,12 @@ object NaivePendingTrader {
               .map(order => order.getQuantityInCoins)
               .sum
           val sellOrder = SellOrder(sellingQuantity, priceDao.coin, priceDao.price)
-          brokerActor ! BinanceWebClientActor.OrderRequest(sellOrder)
+          brokerActor ! BinanceWebClientActor.OrderRequest(sellOrder, messageAdapter)
           pendingSelling(sellOrder, priceDao, profitablePurchases, state)
         case SellOff(priceDao: PriceDao) =>
           val sellingQuantity: BigDecimal = state.activePurchases.map(order => order.getQuantityInCoins).sum
           val sellOrder = SellOrder(sellingQuantity, priceDao.coin, priceDao.price)
-          brokerActor ! BinanceWebClientActor.OrderRequest(sellOrder)
+          brokerActor ! BinanceWebClientActor.OrderRequest(sellOrder, messageAdapter)
           pendingSelling(sellOrder, priceDao, state.activePurchases, state)
         case _ =>
           Behaviors.same
@@ -104,7 +104,7 @@ object NaivePendingTrader {
     Behaviors.receiveMessage {
       case OrderResponse(OrderFulfilled(id)) if id == awaitedOrder.id =>
         val newBudget = TransactionState(state.capital,
-          state.activePurchases - id,
+          state.activePurchases - awaitedOrder,
           awaitedOrder :: state.executedOrders
         )
         operational(newBudget)

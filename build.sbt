@@ -17,6 +17,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % akkaVersion
 // Akka Streams
 libraryDependencies += "com.typesafe.akka" %% "akka-stream" % akkaVersion
 libraryDependencies += "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion
+// https://mvnrepository.com/artifact/com.typesafe.akka/akka-stream-typed
+libraryDependencies += "com.typesafe.akka" %% "akka-stream-typed" % akkaVersion
 
 
 libraryDependencies += "com.typesafe.akka" %% "akka-http" % akkaHttpVersion
