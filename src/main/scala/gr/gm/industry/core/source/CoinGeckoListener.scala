@@ -1,72 +1,107 @@
 package gr.gm.industry.core.source
 
-import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Timers}
-import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
-import akka.http.scaladsl.{Http, HttpExt}
-import akka.pattern.pipe
-import akka.util.ByteString
-//import io.circe.parser.parse
+import akka.actor
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
+import akka.http.scaladsl.model.Uri.{Path, Query}
+import akka.http.scaladsl.model._
+import akka.http.scaladsl.unmarshalling.Unmarshal
+import gr.gm.industry.model.dao.CgEthInfo
 
-import gr.gm.industry.model.dao.CoinGeckoResponse
-import scala.concurrent.duration.DurationInt
+import java.util.concurrent.TimeUnit
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
 import scala.language.postfixOps
+import scala.util.{Failure, Success}
 
-class CoinGeckoListener(trader: ActorRef) extends Actor with ActorLogging with Timers {
-
-    import CoinGeckoListener._
-    import context.dispatcher
-
-    implicit val system: ActorSystem = context.system
-
-    val cryptoId = "ethereum"
-    val currency = "EUR"
-
-    val requestUrl = s"https://api.coingecko.com/api/v3/simple/price?ids=$cryptoId&vs_currencies=$currency&include_market_cap=true&include_24hr_vol=true&include_24hr_change=true"
-    val coinGeckoRequest: HttpRequest = HttpRequest(uri = requestUrl)
-    val http: HttpExt = Http(system)
-
-    def receive: Receive = {
-        case Start(delay) =>
-            log.warning("Bootstrapping")
-            timers.startTimerWithFixedDelay(ListenerKey, Hit, delay second)
-        case Hit =>
-            http.singleRequest(coinGeckoRequest).pipeTo(self)
-        case Pause =>
-            log.warning("I am stopping timer")
-            timers.cancel(ListenerKey)
-        case Stop =>
-            log.warning("I am stopping")
-            context.stop(self)
-        case Error(msg) =>
-            log.error(s"Received error: $msg")
-            context.stop(self)
-        case cgResponse: CoinGeckoResponse =>
-            log.warning(cgResponse.toString)
-
-        case HttpResponse(StatusCodes.OK, headers, entity, _) =>
-            val futureBody = entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(body => body.utf8String)
-            futureBody.map { body: String =>
-              val cgResponse = CoinGeckoResponse(0.2d, 0.3d, 0.3d, 0.3d)
-                trader ! cgResponse
-//                parse(body)
-//                  .map(json => json \\ cryptoId)
-//                  .map(jsons => jsons.head)
-//                  .map(json => json.as[CoinGeckoResponse]
-//                    .foreach(cgResponse => trader ! cgResponse)
-//                  )
-            }
-
-        case resp@HttpResponse(code, _, _, _) =>
-            log.warning("Request failed, response code: " + code)
-            resp.discardEntityBytes()
-    }
-}
 
 object CoinGeckoListener {
-    case object ListenerKey
-    case class Start(delay: Int)
-    case object Stop
-    case object Hit
-    case object Pause
-    case class Error(message: String)
+
+  implicit val actorSystem: actor.ActorSystem = akka.actor.ActorSystem()
+  implicit val dispatcher: ExecutionContextExecutor = actorSystem.dispatcher
+
+
+  sealed trait CoinGeckoAction
+
+  case object ListenerKey extends CoinGeckoAction
+
+  case class Start(delay: Int) extends CoinGeckoAction
+
+  case object Stop extends CoinGeckoAction
+
+  case object Hit extends CoinGeckoAction
+
+  case object Pause extends CoinGeckoAction
+
+  case class Error(message: String) extends CoinGeckoAction
+
+  def parseEntity(entity: ResponseEntity): Unit = {
+    Unmarshal(entity).to[CgEthInfo].onComplete {
+      case Success(price) =>
+        println(s"Successfully fetched price: $price")
+      case Failure(ex) =>
+        Unmarshal(entity).to[String].onComplete(s =>
+          println(s"Failed to parse response to Price: ${ex.getMessage}, $s"))
+    }
+  }
+
+  def fetchPrice(cryptoId: String = "ethereum", currency: String = "EUR"): Unit = {
+    println("================ Fetching Price By CoinGecko ========================")
+    val uri = Uri("https://api.coingecko.com")
+      .withPath(Path("/api/v3/simple/price"))
+      .withQuery(Query(
+        "ids" -> cryptoId,
+        "vs_currencies" -> currency,
+        "include_market_cap" -> "true",
+        "include_24hr_vol" -> "true",
+        "include_24hr_change" -> "true"
+      ))
+    val request: HttpRequest = HttpRequest(method = HttpMethods.GET, uri = uri)
+    Http()
+      .singleRequest(request)
+      .onComplete {
+        case Success(response) =>
+          response.status match {
+            case StatusCodes.OK => parseEntity(response.entity)
+            case status => println(s"Request failed with status $status")
+          }
+        case Failure(ex) =>
+          println(s"HTTP request failed: ${ex.getMessage}")
+      }
+  }
+
+  def apply(): Behavior[CoinGeckoAction] = Behaviors.withTimers {
+    timers: TimerScheduler[CoinGeckoAction] =>
+      Behaviors.receive { (context, action) =>
+        action match {
+
+          case Start(delay) =>
+            context.log.warn("Bootstrapping")
+            timers.startTimerWithFixedDelay(ListenerKey, Hit, FiniteDuration(delay, TimeUnit.SECONDS))
+            Behaviors.same
+
+          case Hit =>
+            fetchPrice()
+            Behaviors.same
+
+          case Pause =>
+            context.log.warn("I am stopping timer")
+            timers.cancel(ListenerKey)
+            Behaviors.same
+
+          case Stop =>
+            context.log.warn("I am stopping")
+            context.stop(context.self)
+            timers.cancel(ListenerKey)
+            Behaviors.same
+
+          case Error(msg) =>
+            context.log.warn(s"Received error: $msg")
+            context.stop(context.self)
+            Behaviors.same
+        }
+      }
+  }
 }

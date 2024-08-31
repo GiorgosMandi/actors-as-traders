@@ -12,7 +12,10 @@ import gr.gm.industry.utils.Constants.{ETH, EUR}
 import scala.concurrent.duration._
 
 
-case class BinancePriceSource(binanceActor: ActorRef[WebClientRequest], parallelism: Int, throttle: (Int, Int)) {
+case class BinancePriceSource(binanceActor: ActorRef[WebClientRequest],
+                              parallelism: Int,
+                              throttle: (Int, Int)
+                             ) {
   implicit val timeout: Timeout = 5.second
 
     def apply(): Source[PriceDao, NotUsed] = {

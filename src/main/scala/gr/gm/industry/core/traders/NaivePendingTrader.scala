@@ -25,7 +25,8 @@ object NaivePendingTrader {
 
   case class TransactionState(capital: BigDecimal,
                               activePurchases: Set[BuyOrder],
-                              executedOrders: List[Order]
+                              executedOrders: List[Order],
+                              brokerActor: ActorRef[WebClientRequest]
                              ) extends TraderData
 
   // expected messages
@@ -48,12 +49,13 @@ object NaivePendingTrader {
 
   private def idle(state: TraderData): Behavior[TraderEvent] = Behaviors.receive {
     (context, event) =>
+      val logger = context.log
       (event, state) match {
         case (Initialize(capital), Uninitialized) =>
-          context.log.info(s"Trader was initialized with capital: $capital")
-          operational(TransactionState(capital, Set[BuyOrder](), Nil))
+          logger.error(s"Trader is in Idle mode with capital: ${capital}")
+          Behaviors.same
         case (x, Uninitialized) =>
-          context.log.error(s"Not expecting command ${x.toString}")
+          logger.error(s"Not expecting command ${x.toString}")
           Behaviors.same
       }
   }
@@ -61,22 +63,21 @@ object NaivePendingTrader {
   private def operational(state: TransactionState): Behavior[TraderEvent] = Behaviors.receive {
     (context, event) =>
 
+      val logger = context.log
+
       val messageAdapter: ActorRef[WebClientResponse] = context.messageAdapter(rsp => OrderResponse(rsp))
-      val brokerActor: ActorRef[WebClientRequest] = context.spawn(BinanceWebClientActor(), "BinanceWebClientActor")
 
       event match {
         case Buy(priceDao: PriceDao) =>
-          context.log.info(s"Received a BUY order: $priceDao")
+          logger.info(s"Received a BUY order: $priceDao")
           val investment = state.capital * BUY_RATIO_TO_CAPITAL
-          val capitalAfterOrder = state.capital - investment
-          context.log.info(s"Received a BUY order: $priceDao ")
           val buyOrder = BuyOrder(investment, priceDao.coin, priceDao.price)
-          brokerActor ! BinanceWebClientActor.OrderRequest(buyOrder, messageAdapter)
-          val newBudget = TransactionState(capitalAfterOrder, state.activePurchases, state.executedOrders)
-          pendingBuying(buyOrder, newBudget)
+          state.brokerActor ! BinanceWebClientActor.OrderRequest(buyOrder, messageAdapter)
+          pendingBuying(buyOrder, state)
 
         case Sell(priceDao: PriceDao) =>
-          context.log.info(s"Received a SELL order: $priceDao")
+          val logger = context.log
+
           /**
            * When we SELL, first we find the orders which are profitable if we sell them
            * with the given price. Then we compute the profit, based on the differences
@@ -84,62 +85,84 @@ object NaivePendingTrader {
            */
           val (profitablePurchases, _) = state.activePurchases
               .partition { order => order.price < priceDao.price }
-          val sellingQuantity = profitablePurchases
-              .map(order => order.getQuantityInCoins)
-              .sum
-          val sellOrder = SellOrder(sellingQuantity, priceDao.coin, priceDao.price)
-          brokerActor ! BinanceWebClientActor.OrderRequest(sellOrder, messageAdapter)
-          pendingSelling(sellOrder, priceDao, profitablePurchases, state)
+          if (profitablePurchases.nonEmpty){
+            logger.info(s"Received a SELL order: $priceDao")
+            val sellingQuantity = profitablePurchases
+                .map(order => order.getQuantityInCoins)
+                .sum
+            val sellOrder = SellOrder(sellingQuantity, priceDao.coin, priceDao.price)
+            state.brokerActor ! BinanceWebClientActor.OrderRequest(sellOrder, messageAdapter)
+            pendingSelling(sellOrder, priceDao, profitablePurchases, state)
+          }
+          else
+            Behaviors.same
+
         case SellOff(priceDao: PriceDao) =>
-          val sellingQuantity: BigDecimal = state.activePurchases.map(order => order.getQuantityInCoins).sum
-          val sellOrder = SellOrder(sellingQuantity, priceDao.coin, priceDao.price)
-          brokerActor ! BinanceWebClientActor.OrderRequest(sellOrder, messageAdapter)
-          pendingSelling(sellOrder, priceDao, state.activePurchases, state)
+            val sellingQuantity: BigDecimal = state.activePurchases.map(order => order.getQuantityInCoins).sum
+            val sellOrder = SellOrder(sellingQuantity, priceDao.coin, priceDao.price)
+            state.brokerActor ! BinanceWebClientActor.OrderRequest(sellOrder, messageAdapter)
+            pendingSelling(sellOrder, priceDao, state.activePurchases, state)
+
         case _ =>
           Behaviors.same
       }
   }
 
   private def pendingBuying(awaitedOrder: BuyOrder, state: TransactionState): Behavior[TraderEvent] =
-    Behaviors.receiveMessage {
-      case OrderResponse(OrderFulfilled(id)) if id == awaitedOrder.id =>
-        val newBudget = TransactionState(state.capital,
-          state.activePurchases - awaitedOrder,
-          awaitedOrder :: state.executedOrders
-        )
-        operational(newBudget)
-      case OrderResponse(OrderFailed(id)) if id == awaitedOrder.id =>
-        operational(state)
-      case _ =>
-        Behaviors.same
+    Behaviors.receive { (context, event) =>
+
+      val logger = context.log
+      event match {
+        case OrderResponse(OrderFulfilled(id)) if id == awaitedOrder.id =>
+          val capitalAfterOrder = state.capital - awaitedOrder.quantity
+          val newState = TransactionState(capitalAfterOrder,
+            state.activePurchases - awaitedOrder,
+            awaitedOrder :: state.executedOrders,
+            state.brokerActor
+          )
+          logger.info(s"BUY Completed: new Capital $capitalAfterOrder")
+          operational(newState)
+        case OrderResponse(OrderFailed(id)) if id == awaitedOrder.id =>
+          operational(state)
+        case _ =>
+          Behaviors.same
+      }
     }
 
+  // todo: log messages
   private def pendingSelling(awaitedOrder: SellOrder,
                              sellingPrice: PriceDao,
                              correspondingOrders: Set[BuyOrder],
                              state: TransactionState
                             ): Behavior[TraderEvent] =
-    Behaviors.receiveMessage {
-      case OrderResponse(OrderFulfilled(id)) if id == awaitedOrder.id =>
-        // compute profit by capitalizing the corresponding orders
-        val expectedProfit = correspondingOrders
-            .map(order => (sellingPrice.price * order.quantity) - (order.price * order.quantity))
-            .sum
-        // compute new capital by adding profit
-        val capitalAfterOrder = state.capital + expectedProfit
-        // remove from active orders the corresponding ones
-        val activePurchases = state
-            .activePurchases
-            .filter(p => correspondingOrders.map(_.id).contains(p.id))
-        val newState = TransactionState(capitalAfterOrder, activePurchases, awaitedOrder :: state.executedOrders)
-        operational(newState)
+    Behaviors.receive { (context, event) =>
 
-      case OrderResponse(OrderFailed(id)) if id == awaitedOrder.id =>
-        operational(state)
-      case _ =>
-        Behaviors.same
+      val logger = context.log
+      event match {
+        case OrderResponse(OrderFulfilled(id)) if id == awaitedOrder.id =>
+          // compute profit by capitalizing the corresponding orders
+          val expectedProfit = correspondingOrders
+              .map(order => (sellingPrice.price * order.quantity) - (order.price * order.quantity))
+              .sum
+          // compute new capital by adding profit
+          val capitalAfterOrder = state.capital + expectedProfit
+          // remove from active orders the corresponding ones
+          val activePurchases = state
+              .activePurchases
+              .filter(p => correspondingOrders.map(_.id).contains(p.id))
+          val orders = awaitedOrder :: state.executedOrders
+          val newState = TransactionState(capitalAfterOrder, activePurchases, orders, state.brokerActor)
+          logger.info(s"SELL Completed: new Capital $capitalAfterOrder")
+          operational(newState)
+
+        case OrderResponse(OrderFailed(id)) if id == awaitedOrder.id =>
+          operational(state)
+        case _ =>
+          Behaviors.same
+      }
     }
 
-  def apply(initialCapital: BigDecimal): Behavior[TraderEvent] =
-    idle(TransactionState(initialCapital, Set(), Nil))
+
+  def apply(initialCapital: BigDecimal, broker: ActorRef[WebClientRequest]): Behavior[TraderEvent] =
+    operational(TransactionState(initialCapital, Set[BuyOrder](), Nil, broker))
 }

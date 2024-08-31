@@ -7,8 +7,9 @@ import akka.pattern.pipe
 import akka.util.ByteString
 import gr.gm.industry.core.source.CoinGeckoListener.ListenerKey
 import gr.gm.industry.core.source.CryptoApiListenerFMS._
-import gr.gm.industry.model.dao.CoinGeckoResponse
+import gr.gm.industry.model.dao.CgEthInfo
 
+import java.time.LocalDateTime
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -46,7 +47,7 @@ class CryptoApiListenerFMS extends FSM[ListenerState, ListenerData] with Timers 
             log.warning("Received Response")
             val futureBody = entity.dataBytes.runFold(ByteString(""))(_ ++ _).map(body => body.utf8String)
             futureBody.map { body: String =>
-                val cgResponse = CoinGeckoResponse(0.2d, 0.3d, 0.3d, 0.3d)
+                val cgResponse = CgEthInfo(0.2d, 0.3d, 0.3d, 0.3d, LocalDateTime.now())
 //                parse(body)
 //                  .map(json => json \\ cryptoId)
 //                  .map(jsons => jsons.head)

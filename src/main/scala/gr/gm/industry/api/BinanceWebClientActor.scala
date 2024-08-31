@@ -1,11 +1,12 @@
 package gr.gm.industry.api
+
 import akka.actor
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
+import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.http.scaladsl.{Http, HttpExt}
 import gr.gm.industry.model.dao.Order.Order
 import gr.gm.industry.model.dao.PriceDao
 import gr.gm.industry.model.dao.PriceDao.PriceError
@@ -33,7 +34,6 @@ object BinanceWebClientActor {
 
   case class PriceResponse(price: PriceDao) extends WebClientResponse
 
-
   sealed trait WebClientRequest
 
   case class OrderRequest(order: Order, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
@@ -41,7 +41,6 @@ object BinanceWebClientActor {
   case class OrderRequestResponse(order: Order, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
 
   case class OrderRequestErrorResponse(error: String, id: UUID, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
-
 
   case class PriceRequest(coin: Coin, currency: Currency, replyTo: ActorRef[WebClientResponse]) extends WebClientRequest
 
@@ -51,16 +50,13 @@ object BinanceWebClientActor {
 
 
   def fetchPrice(coin: Coin, currency: Currency): Future[Either[PriceError, PriceDao]] = {
-
-    val http: HttpExt = Http()
-    val request: HttpRequest = HttpRequest(
-      method = HttpMethods.GET,
-      uri = Uri(s"$BINANCE_URL/price").withQuery(Query("symbol" -> s"${coin.name}${currency.name}"))
-    )
-    http
-        .singleRequest(request)
-        .flatMap(response => Unmarshal(response).to[PriceDto])
-        .map(priceDto => PriceDao(priceDto))
+    val priceUri = Uri(s"$BINANCE_URL/price")
+      .withQuery(Query("symbol" -> s"${coin.name}${currency.name}"))
+    val request: HttpRequest = HttpRequest(method = HttpMethods.GET, uri = priceUri)
+    Http()
+      .singleRequest(request)
+      .flatMap(response => Unmarshal(response).to[PriceDto])
+      .map(priceDto => PriceDao(priceDto))
   }
 
   def placeOrder(order: Order)(implicit dispatcher: ExecutionContextExecutor): Future[Order] = {
@@ -73,30 +69,32 @@ object BinanceWebClientActor {
   def apply(): Behavior[WebClientRequest] =
     Behaviors.setup { context =>
 
-        def handleFutureOrder(orderId: UUID, replyTo: ActorRef[WebClientResponse])(tOrder: Try[Order]): WebClientRequest = {
-          tOrder match {
-            case Success(order) =>
-              OrderRequestResponse(order, replyTo)
-            case Failure(reason) =>
-              context.log.error(s"Order failed: $reason")
-              OrderRequestErrorResponse(reason.toString, orderId, replyTo)
-          }
+      def handleFutureOrder(orderId: UUID,
+                            replyTo: ActorRef[WebClientResponse]
+                           )(tOrder: Try[Order]): WebClientRequest = {
+        tOrder match {
+          case Success(order) =>
+            OrderRequestResponse(order, replyTo)
+          case Failure(reason) =>
+            context.log.error(s"Order failed: $reason")
+            OrderRequestErrorResponse(reason.toString, orderId, replyTo)
         }
+      }
 
       def handlingRequests(): Behavior[WebClientRequest] = Behaviors.receiveMessage {
         case OrderRequest(order, replyTo) =>
           val futureOrder = placeOrder(order)(dispatcher)
-          context.pipeToSelf(futureOrder) (handleFutureOrder(order.id, replyTo))
+          context.pipeToSelf(futureOrder)(handleFutureOrder(order.id, replyTo))
           Behaviors.same
 
         case OrderRequestResponse(order, replyTo) =>
-            replyTo ! OrderFulfilled(order.id)
-            Behaviors.same
+          replyTo ! OrderFulfilled(order.id)
+          Behaviors.same
 
         case OrderRequestErrorResponse(msg, orderId, replyTo) =>
-            context.log.warn(s"Order failed with message: $msg")
-            replyTo ! OrderFailed(orderId)
-            Behaviors.same
+          context.log.warn(s"Order failed with message: $msg")
+          replyTo ! OrderFailed(orderId)
+          Behaviors.same
 
         case PriceRequest(coin, currency, replyTo) =>
           val futurePrice = fetchPrice(coin, currency)
@@ -117,7 +115,6 @@ object BinanceWebClientActor {
           context.log.warn(s"Received a price error: ${error.message}")
           Behaviors.same
       }
-
       handlingRequests()
     }
 }

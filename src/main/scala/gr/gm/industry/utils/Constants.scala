@@ -2,46 +2,47 @@ package gr.gm.industry.utils
 
 object Constants {
 
-    case object ACK
+  case object ACK
 
-    sealed trait Coin{
-        val name = ""
-    }
+  sealed trait Coin {
+    val name = ""
+  }
 
-    case object ADA extends Coin{
-        override val name = "ADA"
-    }
+  case object ADA extends Coin {
+    override val name = "ADA"
+  }
 
-    case object ETH extends Coin {
-        override val name = "ETH"
-    }
+  case object ETH extends Coin {
+    override val name = "ETH"
+  }
 
-    case object BTC extends Coin {
-        override val name = "ADA"
-    }
+  case object BTC extends Coin {
+    override val name = "ADA"
+  }
 
-    object Coin {
-        val options: Map[String, Coin] = List(ADA, ETH, BTC).map(c => c.name -> c).toMap
-        def get(name: String): Option[Coin] = options.get(name)
-    }
+  object Coin {
+    val options: Map[String, Coin] = List(ADA, ETH, BTC).map(c => c.name -> c).toMap
 
-    sealed trait Currency {
-        val name = ""
-    }
+    def get(name: String): Option[Coin] = options.get(name)
+  }
 
-    case object EUR extends Currency {
-        override val name = "EUR"
-    }
+  sealed trait Currency {
+    val name = ""
+  }
 
-    case object DOL extends Currency {
-        override val name = "DOL"
-    }
+  case object EUR extends Currency {
+    override val name = "EUR"
+  }
 
-    object Currency {
-        val options: Map[String, Currency] = List(EUR, DOL).map(c => c.name -> c).toMap
+  case object DOL extends Currency {
+    override val name = "DOL"
+  }
 
-        def get(name: String): Option[Currency] = options.get(name)
-    }
+  object Currency {
+    val options: Map[String, Currency] = List(EUR, DOL).map(c => c.name -> c).toMap
+
+    def get(name: String): Option[Currency] = options.get(name)
+  }
 
 }
 

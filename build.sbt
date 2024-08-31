@@ -7,8 +7,8 @@ lazy val root = (project in file("."))
       name := "ScalaHFT"
   )
 
-val akkaVersion = "2.7.0"
-val akkaHttpVersion = "10.4.0"
+val akkaVersion = "2.9.5"
+val akkaHttpVersion = "10.6.3"
 
 // Akka Essentials
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % akkaVersion
@@ -34,6 +34,3 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.11"
 libraryDependencies ++= Seq(
 //  "com.lightbend.akka" %% "akka-stream-alpakka-csv" % "3.0.4",
 )
-
-//val circeVersion = "0.14.1"
-//libraryDependencies += "io.circe" %% "circe-parser" % circeVersion
