@@ -7,6 +7,7 @@ import akka.stream.scaladsl.Sink
 import com.typesafe.config.{Config, ConfigFactory}
 import gr.gm.industry.api.BinanceWebClientActor
 import gr.gm.industry.api.BinanceWebClientActor.WebClientRequest
+import gr.gm.industry.core.deciders.RandomDecider
 import gr.gm.industry.core.flow.PriceFlow
 import gr.gm.industry.core.source.{BinancePriceSource, CoinGeckoListener}
 import gr.gm.industry.core.traders.NaivePendingTrader
@@ -33,10 +34,9 @@ object App extends App {
     }
   }
 
-  def testCoinGeckoBehavior(delay: Int = 5): Behavior[NotUsed] = {
+  def testCoinGeckoBehavior(delay: Int = 2): Behavior[NotUsed] = {
     Behaviors.setup { context =>
-      // CoinGecko test
-      val listener = context.spawn(CoinGeckoListener(), "CoinGeckoListener")
+      val listener = context.spawn(CoinGeckoListener(RandomDecider), "CoinGeckoListener")
       listener ! CoinGeckoListener.Start(delay)
 
       Behaviors.empty

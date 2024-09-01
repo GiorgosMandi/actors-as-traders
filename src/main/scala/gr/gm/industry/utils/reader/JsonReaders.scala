@@ -1,11 +1,11 @@
 package gr.gm.industry.utils.reader;
 
 
-import gr.gm.industry.model.dao.CgEthInfo
+import gr.gm.industry.model.dao.CgEthInfoDto
 import spray.json.{DefaultJsonProtocol, DeserializationException, JsObject, JsValue, RootJsonFormat};
 
 object JsonReaders extends DefaultJsonProtocol {
-  implicit object CgEthInfoJsonReader extends RootJsonFormat[CgEthInfo] {
+  implicit object CgEthInfoJsonReader extends RootJsonFormat[CgEthInfoDto] {
 
     // example of the expected json:
     //"ethereum":{
@@ -14,14 +14,14 @@ object JsonReaders extends DefaultJsonProtocol {
     //  "eur_24h_vol":10710838487.83845,
     //  "eur_24h_change":1.5273056883490965}
     // }
-    override def read(json: JsValue): CgEthInfo = {
+    override def read(json: JsValue): CgEthInfoDto = {
       json.asJsObject.getFields("ethereum") match {
-        case Seq(JsObject(ethMap)) => CgEthInfo(ethMap)
+        case Seq(JsObject(ethMap)) => CgEthInfoDto(ethMap)
         case _ => throw DeserializationException("CgEthInfo expected")
       }
     }
 
-    override def write(obj: CgEthInfo): JsValue = ???
+    override def write(obj: CgEthInfoDto): JsValue = ???
   }
 }
 

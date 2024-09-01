@@ -4,16 +4,17 @@ import akka.actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model._
-import akka.http.scaladsl.unmarshalling.Unmarshal
-import gr.gm.industry.model.dao.CgEthInfo
+import gr.gm.industry.core.deciders.DecisionMaker
+import gr.gm.industry.model.dao.CgEthInfoDto
+import gr.gm.industry.utils.exception.CustomException
 import gr.gm.industry.utils.reader.JsonReaders._
+import spray.json._
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
 
@@ -37,17 +38,7 @@ object CoinGeckoListener {
 
   case class Error(message: String) extends CoinGeckoAction
 
-  def parseEntity(entity: ResponseEntity): Unit = {
-    Unmarshal(entity).to[CgEthInfo].onComplete {
-      case Success(price) =>
-        println(s"Successfully fetched price: $price")
-      case Failure(ex) =>
-        Unmarshal(entity).to[String].onComplete(s =>
-          println(s"Failed to parse response to Price: ${ex.getMessage}, $s"))
-    }
-  }
-
-  def fetchPrice(cryptoId: String = "ethereum", currency: String = "EUR"): Unit = {
+  def fetchPrice(cryptoId: String = "ethereum", currency: String = "EUR"): Future[CgEthInfoDto] = {
     println("================ Fetching Price By CoinGecko ========================")
     val uri = Uri("https://api.coingecko.com")
       .withPath(Path("/api/v3/simple/price"))
@@ -61,18 +52,19 @@ object CoinGeckoListener {
     val request: HttpRequest = HttpRequest(method = HttpMethods.GET, uri = uri)
     Http()
       .singleRequest(request)
-      .onComplete {
-        case Success(response) =>
-          response.status match {
-            case StatusCodes.OK => parseEntity(response.entity)
-            case status => println(s"Request failed with status $status")
+      .flatMap {
+        case HttpResponse(StatusCodes.OK, _, e, _) =>
+          e.toStrict(5.seconds).flatMap { entity =>
+            val jsonString = entity.data.utf8String
+            val ethInfo = jsonString.parseJson.convertTo[CgEthInfoDto]
+            Future.successful(ethInfo)
           }
-        case Failure(ex) =>
-          println(s"HTTP request failed: ${ex.getMessage}")
+        case HttpResponse(StatusCodes.Forbidden, _, e, _) =>
+          Future.failed(CustomException("Exceeded available requests"))
       }
   }
 
-  def apply(): Behavior[CoinGeckoAction] = Behaviors.withTimers {
+  def apply(decisionMaker: DecisionMaker): Behavior[CoinGeckoAction] = Behaviors.withTimers {
     timers: TimerScheduler[CoinGeckoAction] =>
       Behaviors.receive { (context, action) =>
         action match {
@@ -84,6 +76,14 @@ object CoinGeckoListener {
 
           case Hit =>
             fetchPrice()
+              .onComplete {
+              case Success(ethInfo) =>
+                val price = ethInfo.toPrice()
+                val decision = decisionMaker.decide(price)
+                println(s"For $price was decided to $decision.")
+              case Failure(exc) =>
+                println(s"Failed to receive price, reason: ${exc.toString}")
+            }
             Behaviors.same
 
           case Pause =>
