@@ -9,13 +9,13 @@ import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import gr.gm.industry.model.dao.CgEthInfo
+import gr.gm.industry.utils.reader.JsonReaders._
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
-
 
 object CoinGeckoListener {
 
