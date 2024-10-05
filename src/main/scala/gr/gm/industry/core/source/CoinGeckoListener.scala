@@ -20,10 +20,11 @@ import scala.util.{Failure, Success}
 
 object CoinGeckoListener {
 
+  // system
   implicit val actorSystem: actor.ActorSystem = akka.actor.ActorSystem()
   implicit val dispatcher: ExecutionContextExecutor = actorSystem.dispatcher
 
-
+  // actions
   sealed trait CoinGeckoAction
 
   case object ListenerKey extends CoinGeckoAction
@@ -38,6 +39,7 @@ object CoinGeckoListener {
 
   case class Error(message: String) extends CoinGeckoAction
 
+  // request of fetching prices
   def fetchPrice(cryptoId: String = "ethereum", currency: String = "EUR"): Future[CgEthInfoDto] = {
     println("================ Fetching Price By CoinGecko ========================")
     val uri = Uri("https://api.coingecko.com")
@@ -64,6 +66,7 @@ object CoinGeckoListener {
       }
   }
 
+  // Upon start, repetitive price requests will be sent based on the provided delay
   def apply(decisionMaker: DecisionMaker): Behavior[CoinGeckoAction] = Behaviors.withTimers {
     timers: TimerScheduler[CoinGeckoAction] =>
       Behaviors.receive { (context, action) =>

@@ -3,7 +3,7 @@ package gr.gm.industry.core.traders
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import gr.gm.industry.api.BinanceWebClientActor
-import gr.gm.industry.api.BinanceWebClientActor.{OrderFailed, OrderFulfilled, WebClientRequest, WebClientResponse}
+import gr.gm.industry.api.BinanceWebClientActor.{OrderFailed, OrderFulfilled, BinanceMessage}
 import gr.gm.industry.model.dao.Order.{BuyOrder, Order, SellOrder}
 import gr.gm.industry.model.dao.PriceDao
 
@@ -26,7 +26,7 @@ object NaivePendingTrader {
   case class TransactionState(capital: BigDecimal,
                               activePurchases: Set[BuyOrder],
                               executedOrders: List[Order],
-                              brokerActor: ActorRef[WebClientRequest]
+                              brokerActor: ActorRef[BinanceMessage]
                              ) extends TraderData
 
   // expected messages
@@ -42,7 +42,7 @@ object NaivePendingTrader {
 
   case object Omit extends TraderEvent
 
-  case class OrderResponse(rsp: WebClientResponse) extends TraderEvent
+  case class OrderResponse(rsp: BinanceMessage) extends TraderEvent
 
   val MIN_DEPOSIT = 5f
   val BUY_RATIO_TO_CAPITAL = .2f
@@ -65,7 +65,7 @@ object NaivePendingTrader {
 
       val logger = context.log
 
-      val messageAdapter: ActorRef[WebClientResponse] = context.messageAdapter(rsp => OrderResponse(rsp))
+      val messageAdapter: ActorRef[BinanceMessage] = context.messageAdapter(rsp => OrderResponse(rsp))
 
       event match {
         case Buy(priceDao: PriceDao) =>
@@ -163,6 +163,6 @@ object NaivePendingTrader {
     }
 
 
-  def apply(initialCapital: BigDecimal, broker: ActorRef[WebClientRequest]): Behavior[TraderEvent] =
+  def apply(initialCapital: BigDecimal, broker: ActorRef[BinanceMessage]): Behavior[TraderEvent] =
     operational(TransactionState(initialCapital, Set[BuyOrder](), Nil, broker))
 }
