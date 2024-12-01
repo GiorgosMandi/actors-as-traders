@@ -6,7 +6,7 @@ import akka.stream.scaladsl.{Flow, Source}
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Timeout
 import gr.gm.industry.api.BinanceWebClientActor.{BinanceMessage, BinanceRequest, PriceRequest, PriceResponse, RepetitivePriceRequest}
-import gr.gm.industry.model.dao.PriceDao
+import gr.gm.industry.model.dao.CoinPrice
 import gr.gm.industry.utils.Constants.{ETH, EUR}
 
 import scala.concurrent.duration._
@@ -18,7 +18,7 @@ case class BinancePriceSource(binanceActor: ActorRef[BinanceMessage],
                              ) {
   implicit val timeout: Timeout = 5.second
 
-    def apply(): Source[PriceDao, NotUsed] = {
+    def apply(): Source[CoinPrice, NotUsed] = {
       val askFlow: Flow[String, BinanceMessage, NotUsed] = ActorFlow
         .ask(binanceActor)(makeMessage = (_: String, replyTo: ActorRef[BinanceMessage]) => PriceRequest(ETH, EUR, replyTo))
 

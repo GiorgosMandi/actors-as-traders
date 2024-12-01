@@ -12,7 +12,7 @@ import gr.gm.industry.core.flow.PriceFlow
 import gr.gm.industry.core.source.{BinancePriceSource, CoinGeckoListener}
 import gr.gm.industry.core.traders.NaivePendingTrader
 import gr.gm.industry.core.traders.NaivePendingTrader.TraderEvent
-import gr.gm.industry.utils.Constants.{Coin, Currency, ETH, EUR}
+import gr.gm.industry.utils.Constants.{ETH, EUR}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -50,6 +50,8 @@ object App extends App {
       Behaviors.empty
     }
   }
+
+  // TODO Refactor -  create a stream storing prices to Mongo
 
   val selectedBehavior = testBinanceBehavior()
   val conf: Config = ConfigFactory.load()

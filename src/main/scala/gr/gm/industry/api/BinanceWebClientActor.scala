@@ -7,10 +7,9 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.testkit.TestActor.NullMessage.{msg, sender}
 import gr.gm.industry.model.dao.Order.Order
-import gr.gm.industry.model.dao.PriceDao
-import gr.gm.industry.model.dao.PriceDao.PriceError
+import gr.gm.industry.model.dao.CoinPrice
+import gr.gm.industry.model.dao.CoinPrice.PriceError
 import gr.gm.industry.model.dto.PriceDto
 import gr.gm.industry.utils.Constants.{Coin, Currency}
 
@@ -48,22 +47,22 @@ object BinanceWebClientActor {
 
   case class OrderFailed(id: UUID) extends BinanceResponse
 
-  case class PriceResponse(price: PriceDao) extends BinanceResponse
+  case class PriceResponse(price: CoinPrice) extends BinanceResponse
 
-  case class PriceRequestResponse(price: PriceDao, replyTo: ActorRef[BinanceMessage]) extends BinanceResponse
+  case class PriceRequestResponse(price: CoinPrice, replyTo: ActorRef[BinanceMessage]) extends BinanceResponse
 
   case class OrderRequestErrorResponse(error: String, id: UUID, replyTo: ActorRef[BinanceMessage]) extends BinanceResponse
 
   case class PriceRequestErrorResponse(error: PriceError, replyTo: ActorRef[BinanceMessage]) extends BinanceResponse
 
 
-  private def fetchPrice(coin: Coin, currency: Currency): Future[Either[PriceError, PriceDao]] = {
+  private def fetchPrice(coin: Coin, currency: Currency): Future[Either[PriceError, CoinPrice]] = {
     val priceUri = Uri(s"$BINANCE_URL/price")
       .withQuery(Query("symbol" -> s"${coin.name}${currency.name}"))
     Http()
       .singleRequest(HttpRequest(method = HttpMethods.GET, uri = priceUri))
       .flatMap(response => Unmarshal(response).to[PriceDto])
-      .map(priceDto => PriceDao(priceDto))
+      .map(priceDto => CoinPrice(priceDto))
   }
 
   private def placeOrder(order: Order)
@@ -89,6 +88,7 @@ object BinanceWebClientActor {
         }
         Behaviors.same
 
+      // fetch price and pipe response to self
       case PriceRequest(coin, currency, replyTo) =>
         val futurePrice = fetchPrice(coin, currency)
         context.pipeToSelf(futurePrice) {
@@ -100,6 +100,7 @@ object BinanceWebClientActor {
         }
         Behaviors.same
 
+      // send multiple price requests
       case RepetitivePriceRequest(coin, currency, replyTo, delay) =>
         context.log.warn(
           "Setting up repetitive requests for {} every {}s",

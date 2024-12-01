@@ -5,7 +5,7 @@ import akka.actor.typed.{ActorRef, Behavior}
 import gr.gm.industry.api.BinanceWebClientActor
 import gr.gm.industry.api.BinanceWebClientActor.{OrderFailed, OrderFulfilled, BinanceMessage}
 import gr.gm.industry.model.dao.Order.{BuyOrder, Order, SellOrder}
-import gr.gm.industry.model.dao.PriceDao
+import gr.gm.industry.model.dao.CoinPrice
 
 
 // TODO
@@ -34,11 +34,11 @@ object NaivePendingTrader {
 
   case class Initialize(capital: BigDecimal) extends TraderEvent
 
-  case class Buy(priceDao: PriceDao) extends TraderEvent
+  case class Buy(priceDao: CoinPrice) extends TraderEvent
 
-  case class Sell(priceDao: PriceDao) extends TraderEvent
+  case class Sell(priceDao: CoinPrice) extends TraderEvent
 
-  case class SellOff(priceDao: PriceDao) extends TraderEvent
+  case class SellOff(priceDao: CoinPrice) extends TraderEvent
 
   case object Omit extends TraderEvent
 
@@ -68,14 +68,14 @@ object NaivePendingTrader {
       val messageAdapter: ActorRef[BinanceMessage] = context.messageAdapter(rsp => OrderResponse(rsp))
 
       event match {
-        case Buy(priceDao: PriceDao) =>
+        case Buy(priceDao: CoinPrice) =>
           logger.info(s"Received a BUY order: $priceDao")
           val investment = state.capital * BUY_RATIO_TO_CAPITAL
           val buyOrder = BuyOrder(investment, priceDao.coin, priceDao.price)
           state.brokerActor ! BinanceWebClientActor.OrderRequest(buyOrder, messageAdapter)
           pendingBuying(buyOrder, state)
 
-        case Sell(priceDao: PriceDao) =>
+        case Sell(priceDao: CoinPrice) =>
           val logger = context.log
 
           /**
@@ -97,7 +97,7 @@ object NaivePendingTrader {
           else
             Behaviors.same
 
-        case SellOff(priceDao: PriceDao) =>
+        case SellOff(priceDao: CoinPrice) =>
             val sellingQuantity: BigDecimal = state.activePurchases.map(order => order.getQuantityInCoins).sum
             val sellOrder = SellOrder(sellingQuantity, priceDao.coin, priceDao.price)
             state.brokerActor ! BinanceWebClientActor.OrderRequest(sellOrder, messageAdapter)
@@ -131,7 +131,7 @@ object NaivePendingTrader {
 
   // todo: log messages
   private def pendingSelling(awaitedOrder: SellOrder,
-                             sellingPrice: PriceDao,
+                             sellingPrice: CoinPrice,
                              correspondingOrders: Set[BuyOrder],
                              state: TransactionState
                             ): Behavior[TraderEvent] =

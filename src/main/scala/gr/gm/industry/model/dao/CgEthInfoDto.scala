@@ -11,8 +11,8 @@ case class CgEthInfoDto(price: BigDecimal,
                         change24h: BigDecimal,
                         timestamp: LocalDateTime
                     ) {
-  def toPrice(): PriceDao= {
-    PriceDao(coin = ETH, currency= EUR, price = price, timestamp = timestamp)
+  def toPrice(): CoinPrice= {
+    CoinPrice(coin = ETH, currency= EUR, price = price, timestamp = timestamp)
   }
 }
 
