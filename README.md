@@ -1,1 +1,1 @@
-# ScalaHFT
+# actors-as-traders

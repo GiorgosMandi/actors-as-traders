@@ -6,8 +6,8 @@ import akka.pattern.pipe
 import akka.stream.Materializer
 import akka.util.Timeout
 import gr.gm.industry.model.dao.CoinPrice
-import reactivemongo.api.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.api.bson.collection.BSONCollection
+import reactivemongo.api.bson.{BSONDocument, BSONObjectID}
 import reactivemongo.api.{AsyncDriver, MongoConnection}
 
 import scala.concurrent.duration.DurationInt
@@ -18,13 +18,9 @@ class PriceRepositoryActor(config: DbConfig) extends Actor with ActorLogging {
   sealed trait DbMessage
   case class AddPrice(price: CoinPrice) extends DbMessage
   case class GetPrice(id: BSONObjectID) extends DbMessage
-  case class UpdatePrice(id: BSONObjectID, price: CoinPrice) extends DbMessage
-  case class DeletePrice(id: BSONObjectID) extends DbMessage
   case class PriceAdded(price: CoinPrice)
 
   case class PriceFetched(price: Option[CoinPrice])
-  case class PriceUpdated(result: Boolean)
-  case class PriceDeleted(result: Boolean)
 
   implicit val system: actor.ActorSystem = context.system
   implicit val ec: ExecutionContext = context.dispatcher
@@ -51,26 +47,6 @@ class PriceRepositoryActor(config: DbConfig) extends Actor with ActorLogging {
     case GetPrice(id) =>
       pricesCollection.flatMap { coll =>
         coll.find(BSONDocument("_id" -> id)).one[CoinPrice]
-      } pipeTo sender()
-
-    case UpdatePrice(id, price) =>
-      val query = BSONDocument("_id" -> id)
-      val update = BSONDocument("$set" -> BSONDocument(
-        "coin" -> price.coin.toString,
-        "currency" -> price.currency.toString,
-        "price" -> price.price,
-        "timestamp" -> price.timestamp
-      ))
-      pricesCollection.flatMap { coll =>
-        coll.update.one(query, update).map { result =>
-          result.n > 0  // True if at least one document was updated
-        }
-      } pipeTo sender()
-
-    case DeletePrice(id) =>
-      val query = BSONDocument("_id" -> id)
-      pricesCollection.flatMap(_.delete.one(query)).map { result =>
-        result.n > 0  // True if at least one document was deleted
       } pipeTo sender()
   }
 }

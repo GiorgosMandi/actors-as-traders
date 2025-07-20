@@ -1,8 +1,8 @@
 package gr.gm.industry.model.dao
 
 import gr.gm.industry.model.dto.PriceDto
-import gr.gm.industry.utils.Constants.{Coin, Currency}
-import reactivemongo.api.bson.{BSONObjectID, Macros}
+import gr.gm.industry.utils.enums.{Coin, Currency}
+import reactivemongo.api.bson.{BSONDocumentHandler, BSONObjectID, Macros}
 
 import java.time.LocalDateTime
 import scala.math.BigDecimal.RoundingMode
@@ -20,7 +20,7 @@ object CoinPrice {
   case class PriceError(message: String)
 
   // This is needed for BSON serialization
-  implicit val coinPriceHandler = Macros.handler[CoinPrice]
+  implicit val coinPriceHandler: BSONDocumentHandler[CoinPrice] = Macros.handler[CoinPrice]
 
   def apply(priceDto: PriceDto): Either[PriceError, CoinPrice] = {
     val price: BigDecimal = BigDecimal(priceDto.price).setScale(5, RoundingMode.HALF_EVEN)

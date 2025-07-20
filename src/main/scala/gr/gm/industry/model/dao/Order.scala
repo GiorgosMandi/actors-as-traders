@@ -1,7 +1,7 @@
 package gr.gm.industry.model.dao
 
-import gr.gm.industry.utils.Constants.Coin
 import gr.gm.industry.utils.TradeActions.{BUY, OrderType, SELL}
+import gr.gm.industry.utils.enums.Coin
 
 import java.util.UUID
 import scala.math.BigDecimal.RoundingMode
@@ -26,6 +26,5 @@ object Order {
   case class SellOrder(quantity: BigDecimal, coin: Coin, price: BigDecimal) extends Order {
     val orderType: OrderType = SELL
   }
-
 }
 

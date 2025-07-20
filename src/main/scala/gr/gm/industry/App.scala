@@ -5,26 +5,27 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior, DispatcherSelector}
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.{Config, ConfigFactory}
-import gr.gm.industry.api.BinanceWebClientActor
-import gr.gm.industry.api.BinanceWebClientActor.{BinanceMessage, RepetitivePriceRequest}
+import gr.gm.industry.actors.BinanceWebClientActor
+import gr.gm.industry.actors.BinanceWebClientActor.{BinanceMessage, BinancePricePollingRequest}
 import gr.gm.industry.core.deciders.RandomDecider
 import gr.gm.industry.core.flow.PriceFlow
 import gr.gm.industry.core.source.{BinancePriceSource, CoinGeckoListener}
 import gr.gm.industry.core.traders.NaivePendingTrader
-import gr.gm.industry.core.traders.NaivePendingTrader.TraderEvent
-import gr.gm.industry.utils.Constants.{ETH, EUR}
+import gr.gm.industry.utils.enums.Coin.ETH
+import gr.gm.industry.utils.enums.Currency.EUR
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 object App extends App {
 
-  def testTradingBehavior(budget: Long = 200): Behavior[NotUsed] = {
+  private def testTradingBehavior(budget: Long = 200): Behavior[NotUsed] = {
     Behaviors.setup { context =>
       implicit val system: ActorSystem[Nothing] = context.system
       val binanceActor: ActorRef[BinanceMessage] = context.spawn(BinanceWebClientActor(), "BinanceActor")
-      val naiveTrader: ActorRef[TraderEvent] = context.spawn(NaivePendingTrader(budget, binanceActor), "NaiveTrader")
       val priceSource = BinancePriceSource(binanceActor, parallelism = 5, throttle = (4, 1))
+
+      val naiveTrader = context.spawn(NaivePendingTrader(budget, binanceActor), "NaiveTrader")
       val decisionMakerFlow = PriceFlow.decisionMakerFlow
       priceSource.apply()
         .via(decisionMakerFlow)
@@ -46,14 +47,14 @@ object App extends App {
   def testBinanceBehavior(delay: Int = 2): Behavior[NotUsed] = {
     Behaviors.setup { context =>
       val binanceWebClientActor = context.spawn(BinanceWebClientActor(), "BinanceWebClientActor")
-      binanceWebClientActor ! RepetitivePriceRequest(ETH, EUR, binanceWebClientActor, delay)
+      binanceWebClientActor ! BinancePricePollingRequest(ETH, EUR, binanceWebClientActor, delay)
       Behaviors.empty
     }
   }
 
   // TODO Refactor -  create a stream storing prices to Mongo
 
-  val selectedBehavior = testBinanceBehavior()
+  val selectedBehavior = testTradingBehavior()
   val conf: Config = ConfigFactory.load()
   val system = ActorSystem(selectedBehavior, "hft-app", conf)
 

@@ -1,11 +1,11 @@
-package gr.gm.industry.utils.reader;
+package gr.gm.industry.utils.reader
 
 
-import gr.gm.industry.model.dao.CgEthInfoDto
-import spray.json.{DefaultJsonProtocol, DeserializationException, JsObject, JsValue, RootJsonFormat};
+import gr.gm.industry.model.dao.CoinGeckoCoinDto
+import spray.json.{DefaultJsonProtocol, DeserializationException, JsObject, JsValue, RootJsonFormat}
 
 object JsonReaders extends DefaultJsonProtocol {
-  implicit object CgEthInfoJsonReader extends RootJsonFormat[CgEthInfoDto] {
+  implicit object CgEthInfoJsonReader extends RootJsonFormat[CoinGeckoCoinDto] {
 
     // example of the expected json:
     //"ethereum":{
@@ -14,14 +14,14 @@ object JsonReaders extends DefaultJsonProtocol {
     //  "eur_24h_vol":10710838487.83845,
     //  "eur_24h_change":1.5273056883490965}
     // }
-    override def read(json: JsValue): CgEthInfoDto = {
+    override def read(json: JsValue): CoinGeckoCoinDto = {
       json.asJsObject.getFields("ethereum") match {
-        case Seq(JsObject(ethMap)) => CgEthInfoDto(ethMap)
+        case Seq(JsObject(ethMap)) => CoinGeckoCoinDto(ethMap)
         case _ => throw DeserializationException("CgEthInfo expected")
       }
     }
 
-    override def write(obj: CgEthInfoDto): JsValue = ???
+    override def write(obj: CoinGeckoCoinDto): JsValue = ???
   }
 }
 

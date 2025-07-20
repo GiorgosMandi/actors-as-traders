@@ -7,7 +7,7 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model._
 import gr.gm.industry.core.deciders.DecisionMaker
-import gr.gm.industry.model.dao.CgEthInfoDto
+import gr.gm.industry.model.dao.CoinGeckoCoinDto
 import gr.gm.industry.utils.exception.CustomException
 import gr.gm.industry.utils.reader.JsonReaders._
 import spray.json._
@@ -40,7 +40,7 @@ object CoinGeckoListener {
   case class Error(message: String) extends CoinGeckoAction
 
   // request of fetching prices
-  def fetchPrice(cryptoId: String = "ethereum", currency: String = "EUR"): Future[CgEthInfoDto] = {
+  def fetchPrice(cryptoId: String = "ethereum", currency: String = "EUR"): Future[CoinGeckoCoinDto] = {
     println("================ Fetching Price By CoinGecko ========================")
     val uri = Uri("https://api.coingecko.com")
       .withPath(Path("/api/v3/simple/price"))
@@ -58,7 +58,7 @@ object CoinGeckoListener {
         case HttpResponse(StatusCodes.OK, _, e, _) =>
           e.toStrict(5.seconds).flatMap { entity =>
             val jsonString = entity.data.utf8String
-            val ethInfo = jsonString.parseJson.convertTo[CgEthInfoDto]
+            val ethInfo = jsonString.parseJson.convertTo[CoinGeckoCoinDto]
             Future.successful(ethInfo)
           }
         case HttpResponse(StatusCodes.Forbidden, _, e, _) =>
@@ -81,7 +81,7 @@ object CoinGeckoListener {
             fetchPrice()
               .onComplete {
               case Success(ethInfo) =>
-                val price = ethInfo.toPrice()
+                val price = ethInfo.toPrice
                 val decision = decisionMaker.decide(price)
                 println(s"For $price was decided to $decision.")
               case Failure(exc) =>

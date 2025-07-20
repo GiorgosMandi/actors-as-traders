@@ -4,10 +4,10 @@ ThisBuild / version := "1.0-SNAPSHOT"
 
 lazy val root = (project in file("."))
   .settings(
-      name := "ScalaHFT"
+      name := "actors-as-traders"
   )
 
-val akkaVersion = "2.6.20"
+val akkaVersion = "2.7.0"
 val akkaHttpVersion = "10.5.2"
 
 // Akka Essentials
