@@ -1,6 +1,7 @@
 package gr.gm.industry.core.traders
 
-import gr.gm.industry.utils.Constants.{Coin, Currency}
+import gr.gm.industry.utils.enums.{Coin, Currency}
+
 
 sealed trait Order {
   val coin: Coin

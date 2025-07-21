@@ -1,10 +1,10 @@
-package gr.gm.industry.utils.reader
+package gr.gm.industry.utils.jsonProtocols
 
 
 import gr.gm.industry.model.dao.CoinGeckoCoinDto
 import spray.json.{DefaultJsonProtocol, DeserializationException, JsObject, JsValue, RootJsonFormat}
 
-object JsonReaders extends DefaultJsonProtocol {
+object CoinGeckoCoinDtoProtocol extends DefaultJsonProtocol {
   implicit object CgEthInfoJsonReader extends RootJsonFormat[CoinGeckoCoinDto] {
 
     // example of the expected json:

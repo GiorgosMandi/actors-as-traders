@@ -3,13 +3,12 @@ package gr.gm.industry.actors
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors, TimerScheduler}
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.Uri.Query
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, Uri}
+import akka.http.scaladsl.model.{HttpMethods, HttpRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
+import gr.gm.industry.dto.PriceDto
+import gr.gm.industry.factories.BinanceUriFactory
 import gr.gm.industry.model.dao.CoinPrice
 import gr.gm.industry.model.dao.CoinPrice.PriceError
-import gr.gm.industry.model.dto.PriceDto
-import gr.gm.industry.utils.Constants.BINANCE_API_URL
 import gr.gm.industry.utils.enums.{Coin, Currency}
 
 import java.util.concurrent.TimeUnit
@@ -37,8 +36,7 @@ object BinanceWebClientActor {
                         (implicit ec: ExecutionContextExecutor,
                          system: ActorSystem[_]
                         ): Future[Either[PriceError, CoinPrice]] = {
-    val priceUri = Uri(s"$BINANCE_API_URL/price")
-      .withQuery(Query("symbol" -> s"${coin.name}${currency.name}"))
+    val priceUri = BinanceUriFactory.getPriceUri(coin, currency)
     Http()
       .singleRequest(HttpRequest(method = HttpMethods.GET, uri = priceUri))
       .flatMap {

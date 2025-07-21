@@ -1,6 +1,6 @@
 package gr.gm.industry.model.dao
 
-import gr.gm.industry.model.dto.PriceDto
+import gr.gm.industry.dto.PriceDto
 import gr.gm.industry.utils.enums.{Coin, Currency}
 import reactivemongo.api.bson.{BSONDocumentHandler, BSONObjectID, Macros}
 

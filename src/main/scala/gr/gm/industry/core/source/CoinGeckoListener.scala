@@ -9,7 +9,7 @@ import akka.http.scaladsl.model._
 import gr.gm.industry.core.deciders.DecisionMaker
 import gr.gm.industry.model.dao.CoinGeckoCoinDto
 import gr.gm.industry.utils.exception.CustomException
-import gr.gm.industry.utils.reader.JsonReaders._
+import gr.gm.industry.utils.jsonProtocols.CoinGeckoCoinDtoProtocol._
 import spray.json._
 
 import java.util.concurrent.TimeUnit

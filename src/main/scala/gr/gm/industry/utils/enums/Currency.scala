@@ -16,6 +16,9 @@ object Currency {
     override val name = "USD"
   }
 
+  case object USDT extends Currency {
+    override val name = "USDT"
+  }
   val all: List[Currency] = List(EUR, USD)
 
   private val byName: Map[String, Currency] = all.map(c => c.name -> c).toMap

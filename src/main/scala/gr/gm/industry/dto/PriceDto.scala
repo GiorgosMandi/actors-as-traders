@@ -1,4 +1,4 @@
-package gr.gm.industry.model.dto
+package gr.gm.industry.dto
 
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
