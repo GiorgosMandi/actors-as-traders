@@ -1,4 +1,4 @@
-package gr.gm.industry.sources
+package gr.gm.industry.streams.sources
 
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.http.scaladsl.Http

@@ -4,7 +4,7 @@ import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior, DispatcherSelector}
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Flow, Sink}
+import akka.stream.scaladsl.Sink
 import com.typesafe.config.{Config, ConfigFactory}
 import gr.gm.industry.actors.BinanceWebClientActor
 import gr.gm.industry.actors.BinanceWebClientActor.{BinanceMessage, BinancePricePollingRequest}
@@ -12,16 +12,13 @@ import gr.gm.industry.core.deciders.RandomDecider
 import gr.gm.industry.core.flow.PriceFlow
 import gr.gm.industry.core.source.{BinancePriceSource, CoinGeckoListener}
 import gr.gm.industry.core.traders.NaivePendingTrader
-import gr.gm.industry.dto.BookTickerPrice
-import gr.gm.industry.sources.BinanceStreamSource
+import gr.gm.industry.streams.BinanceStreamingProcessingGraph
 import gr.gm.industry.utils.enums.Coin.ETH
 import gr.gm.industry.utils.enums.Currency.EUR
 import gr.gm.industry.utils.enums.{Coin, Currency}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import spray.json._
-import gr.gm.industry.utils.jsonProtocols.BookTickerPriceProtocol._
 
 object App extends App {
 
@@ -47,13 +44,8 @@ object App extends App {
       implicit val system: ActorSystem[Nothing] = context.system
       implicit val ec: ExecutionContext = context.executionContext
       implicit val mat: Materializer = Materializer(context)
-      val priceSource = BinanceStreamSource(Coin.BTC, Currency.USDT)
-      val parsePriceFlow: Flow[String, BookTickerPrice, NotUsed] =
-      Flow[String].map(_.parseJson.convertTo[BookTickerPrice])
-      priceSource
-        .via(parsePriceFlow)
-        .to(Sink.foreach { price => println(s"Price: $price") })
-        .run()
+      val graph = BinanceStreamingProcessingGraph(Coin.BTC, Currency.USDT)
+      graph.run()
       Behaviors.empty
     }
   }
@@ -74,7 +66,6 @@ object App extends App {
     }
   }
 
-  // TODO Refactor -  create a stream storing prices to Mongo
   val selectedBehavior = testBinanceWebSocketSource()
   val conf: Config = ConfigFactory.load()
 
