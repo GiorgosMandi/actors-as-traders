@@ -2,16 +2,12 @@ package gr.gm.industry
 
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior, DispatcherSelector}
+import akka.actor.typed.{ActorSystem, Behavior, DispatcherSelector}
 import akka.stream.Materializer
-import akka.stream.scaladsl.Sink
 import com.typesafe.config.{Config, ConfigFactory}
-import gr.gm.industry.actors.BinanceWebClientActor
-import gr.gm.industry.actors.BinanceWebClientActor.{BinanceMessage, BinancePricePollingRequest}
+import gr.gm.industry.actors.BinanceWebClientActor.BinancePricePollingRequest
+import gr.gm.industry.actors.{BinanceWebClientActor, CoinGeckoListenerActor}
 import gr.gm.industry.core.deciders.RandomDecider
-import gr.gm.industry.core.flow.PriceFlow
-import gr.gm.industry.core.source.{BinancePriceSource, CoinGeckoListener}
-import gr.gm.industry.core.traders.NaivePendingTrader
 import gr.gm.industry.streams.BinanceStreamingProcessingGraph
 import gr.gm.industry.utils.enums.Coin.ETH
 import gr.gm.industry.utils.enums.Currency.EUR
@@ -24,16 +20,16 @@ object App extends App {
 
   private def testTradingBehavior(budget: Long = 200): Behavior[NotUsed] = {
     Behaviors.setup { context =>
-      implicit val system: ActorSystem[Nothing] = context.system
-      val binanceActor: ActorRef[BinanceMessage] = context.spawn(BinanceWebClientActor(), "BinanceActor")
-      val priceSource = BinancePriceSource(binanceActor, parallelism = 5, throttle = (4, 1))
-
-      val naiveTrader = context.spawn(NaivePendingTrader(budget, binanceActor), "NaiveTrader")
-      val decisionMakerFlow = PriceFlow.decisionMakerFlow
-      priceSource.apply()
-        .via(decisionMakerFlow)
-        .to(Sink.foreach { tradeAction => naiveTrader ! tradeAction })
-        .run()
+//      implicit val system: ActorSystem[Nothing] = context.system
+//      val binanceActor: ActorRef[BinanceMessage] = context.spawn(BinanceWebClientActor(), "BinanceActor")
+//      val priceSource = BinancePriceSource(binanceActor, parallelism = 5, throttle = (4, 1))
+//
+//      val naiveTrader = context.spawn(NaivePendingTrader(budget, binanceActor), "NaiveTrader")
+//      val decisionMakerFlow = PriceFlow.decisionMakerFlow
+//      priceSource.apply()
+//        .via(decisionMakerFlow)
+//        .to(Sink.foreach { tradeAction => naiveTrader ! tradeAction })
+//        .run()
 
       Behaviors.empty
     }
@@ -52,8 +48,8 @@ object App extends App {
 
   def testCoinGeckoBehavior(delay: Int = 2): Behavior[NotUsed] = {
     Behaviors.setup { context =>
-      val listener = context.spawn(CoinGeckoListener(RandomDecider), "CoinGeckoListener")
-      listener ! CoinGeckoListener.Start(delay)
+      val listener = context.spawn(CoinGeckoListenerActor(RandomDecider), "CoinGeckoListener")
+      listener ! CoinGeckoListenerActor.Start(delay)
       Behaviors.empty
     }
   }

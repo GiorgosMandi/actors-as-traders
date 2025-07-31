@@ -8,7 +8,7 @@ import java.util.UUID
 import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Random, Success}
 
-object BinanceOrderActor {
+object BinanceTradeActor {
 
   // supported messages
   sealed trait BinanceOrder

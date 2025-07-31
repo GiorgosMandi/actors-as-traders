@@ -1,12 +1,11 @@
-package gr.gm.industry.core.source
+package gr.gm.industry.fms
 
 import akka.actor.{ActorSystem, FSM, Timers}
 import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.pipe
 import akka.util.ByteString
-import gr.gm.industry.core.source.CoinGeckoListener.ListenerKey
-import gr.gm.industry.core.source.CryptoApiListenerFMS._
+import gr.gm.industry.fms.CryptoApiListenerFMS.{ListenerKey, _}
 import gr.gm.industry.model.dao.CoinGeckoCoinDto
 
 import java.time.LocalDateTime
@@ -14,7 +13,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 class CryptoApiListenerFMS extends FSM[ListenerState, ListenerData] with Timers {
-
+  import gr.gm.industry.fms.CryptoApiListenerFMS._
     implicit val system: ActorSystem = context.system
 
     import context.dispatcher

@@ -13,8 +13,10 @@ object BinanceUriFactory {
   val BINANCE_WS_URL = "wss://fstream.binance.com"
 
   def getPriceUri(coin: Coin, currency:Currency): Uri =  Uri(s"$BINANCE_API_URL/price")
-    .withQuery(Query("symbol" -> s"${coin.name}${currency.name}"))
+    .withQuery(Query("symbol" -> getSymbol(coin, currency)))
 
   def getPriceWsUri(coin: Coin, currency:Currency, streamType: StreamType = BookTicker): Uri =
     Uri(s"$BINANCE_WS_URL/ws/${coin.name.toLowerCase}${currency.name.toLowerCase}@${streamType.name}")
+
+  def getSymbol(coin: Coin, currency:Currency): String = s"${coin.name}${currency.name}"
 }

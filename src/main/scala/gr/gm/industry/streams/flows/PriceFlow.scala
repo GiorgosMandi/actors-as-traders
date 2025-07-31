@@ -1,12 +1,12 @@
-package gr.gm.industry.core.flow
+package gr.gm.industry.streams.flows
 
 import akka.NotUsed
 import akka.stream.FlowShape
+import akka.stream.scaladsl.GraphDSL.Implicits._
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Zip}
 import gr.gm.industry.core.deciders.RandomDecider
-import gr.gm.industry.model.dao.CoinPrice
-import akka.stream.scaladsl.GraphDSL.Implicits._
 import gr.gm.industry.core.traders.NaivePendingTrader.TradeActionEvent
+import gr.gm.industry.model.dao.CoinPrice
 import gr.gm.industry.utils.TradeActions
 
 // TODO remove second argument
