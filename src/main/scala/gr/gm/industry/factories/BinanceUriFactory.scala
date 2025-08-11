@@ -4,19 +4,17 @@ import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Query
 import gr.gm.industry.utils.enums.binance.StreamType
 import gr.gm.industry.utils.enums.binance.StreamType.BookTicker
-import gr.gm.industry.utils.enums.{Coin, Currency}
-
+import gr.gm.industry.utils.model.TradingSymbol
 
 object BinanceUriFactory {
 
   val BINANCE_API_URL = "https://www.binance.com/api/v3/ticker"
   val BINANCE_WS_URL = "wss://fstream.binance.com"
 
-  def getPriceUri(coin: Coin, currency:Currency): Uri =  Uri(s"$BINANCE_API_URL/price")
-    .withQuery(Query("symbol" -> getSymbol(coin, currency)))
+  def getPriceUri(symbol: TradingSymbol): Uri =  Uri(s"$BINANCE_API_URL/price")
+    .withQuery(Query("symbol" -> symbol.toString))
 
-  def getPriceWsUri(coin: Coin, currency:Currency, streamType: StreamType = BookTicker): Uri =
-    Uri(s"$BINANCE_WS_URL/ws/${coin.name.toLowerCase}${currency.name.toLowerCase}@${streamType.name}")
+  def getPriceWsUri(symbol: TradingSymbol, streamType: StreamType = BookTicker): Uri =
+    Uri(s"$BINANCE_WS_URL/ws/${symbol.coin.name.toLowerCase}${symbol.currency.name.toLowerCase}@${streamType.name}")
 
-  def getSymbol(coin: Coin, currency:Currency): String = s"${coin.name}${currency.name}"
 }

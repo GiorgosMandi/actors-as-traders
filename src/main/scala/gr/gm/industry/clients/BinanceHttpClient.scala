@@ -5,10 +5,8 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import gr.gm.industry.factories.BinanceUriFactory
-import gr.gm.industry.model.dao.Order.{BuyOrder, FailedOrder, Order}
-import gr.gm.industry.utils.TradeActions.BUY
-import gr.gm.industry.utils.enums.{Coin, Currency}
+import gr.gm.industry.model.TradeDecision.OrderIntent
+import gr.gm.industry.model.orders.submitted.{FailedPlacedOrder, PlacedOrder, SubmittedOrder}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -23,20 +21,15 @@ class BinanceHttpClient(apiKey: String, secretKey: String)
                        ) {
   private val endpoint = "https://testnet.binance.vision/api/v3/order" // Testnet Spot API
 
-  def placeLimitBuy(coin: Coin,
-                    currency: Currency,
-                    quantity: BigDecimal,
-                    price: BigDecimal
-                   ): Future[Order] = {
+  def placeLimitBuy(orderIntent: OrderIntent): Future[SubmittedOrder] = {
     val timestamp = System.currentTimeMillis()
-    val symbol = BinanceUriFactory.getSymbol(coin, currency)
     val params = Map(
-      "symbol" -> symbol,
+      "symbol" -> orderIntent.symbol.toString(),
       "side" -> "BUY",
       "type" -> "LIMIT",
       "timeInForce" -> "GTC",
-      "quantity" -> quantity.toString(),
-      "price" -> price.toString(),
+      "quantity" -> orderIntent.quantity.toString(),
+      "price" -> orderIntent.price.toString(),
       "recvWindow" -> "5000",
       "timestamp" -> timestamp.toString
     )
@@ -57,14 +50,13 @@ class BinanceHttpClient(apiKey: String, secretKey: String)
           .map { jsString =>
             extractOrderFields(jsString) match {
               case Right((orderId, clientOrderId)) =>
-                BuyOrder(orderId, clientOrderId, quantity, coin, price): Order
+                PlacedOrder(orderIntent, orderId, clientOrderId): SubmittedOrder
               case Left(err) =>
-                FailedOrder(err, BUY, quantity, coin, price): Order
+                FailedPlacedOrder(orderIntent, s"Failed to extract order fields: $err"): SubmittedOrder
             }
           }
       }
   }
-
 
   private def sign(data: String): String = {
     val sha256HMAC = Mac.getInstance("HmacSHA256")
@@ -87,5 +79,4 @@ class BinanceHttpClient(apiKey: String, secretKey: String)
       case ex: Exception => Left(s"Unknown error: ${ex.getMessage}")
     }
   }
-
 }

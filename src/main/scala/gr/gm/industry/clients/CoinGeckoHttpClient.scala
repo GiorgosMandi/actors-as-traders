@@ -2,14 +2,14 @@ package gr.gm.industry.clients
 
 import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, StatusCodes, Uri}
 import akka.http.scaladsl.model.Uri.{Path, Query}
+import akka.http.scaladsl.model._
 import akka.stream.Materializer
-import gr.gm.industry.model.dao.CoinGeckoCoinDto
+import gr.gm.industry.dto.CoinGeckoPriceDto
 import gr.gm.industry.utils.enums.Currency.EUR
 import gr.gm.industry.utils.enums.{Coin, Currency}
 import gr.gm.industry.utils.exception.CustomException
-import gr.gm.industry.utils.jsonProtocols.CoinGeckoCoinDtoProtocol._
+import gr.gm.industry.utils.jsonProtocols.CoinGeckoPriceDtoProtocol._
 import spray.json._
 
 import scala.concurrent.duration._
@@ -23,7 +23,7 @@ object CoinGeckoHttpClient {
                 (implicit system: ClassicActorSystemProvider,
                  ec: ExecutionContext,
                  mat: Materializer
-                ): Future[CoinGeckoCoinDto] = {
+                ): Future[CoinGeckoPriceDto] = {
     val cryptoId = this.getCryptoId(coin)
     val uri = Uri(coinGeckoUri)
       .withPath(Path("/api/v3/simple/price"))
@@ -41,7 +41,7 @@ object CoinGeckoHttpClient {
         case HttpResponse(StatusCodes.OK, _, e, _) =>
           e.toStrict(5.seconds).flatMap { entity =>
             val jsonString = entity.data.utf8String
-            val ethInfo = jsonString.parseJson.convertTo[CoinGeckoCoinDto]
+            val ethInfo = jsonString.parseJson.convertTo[CoinGeckoPriceDto]
             Future.successful(ethInfo)
           }
         case HttpResponse(StatusCodes.Forbidden, _, e, _) =>
@@ -53,5 +53,5 @@ object CoinGeckoHttpClient {
     coin match {
       case Coin.ETH => "ethereum"
       case _ => ""
-  }
+    }
 }

@@ -8,20 +8,21 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import gr.gm.industry.factories.BinanceUriFactory
 import gr.gm.industry.utils.enums.{Coin, Currency}
+import gr.gm.industry.utils.model.TradingSymbol
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
 object BinanceStreamSource {
 
-  def apply(coin: Coin, currency: Currency)(
+  def apply(tradingSymbol: TradingSymbol)(
     implicit system: ClassicActorSystemProvider,
     ec: ExecutionContext,
     mat: Materializer,
   ): Source[String, NotUsed] = {
     implicit val classicSystem: ActorSystem = system.classicSystem
 
-    val priceWsUri = BinanceUriFactory.getPriceWsUri(coin, currency)
+    val priceWsUri = BinanceUriFactory.getPriceWsUri(tradingSymbol)
     val webSocketUri = WebSocketRequest(priceWsUri)
 
     // This queue will push elements from the WebSocket to downstream consumers

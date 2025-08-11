@@ -1,34 +1,29 @@
-package gr.gm.industry.model.dao
+package gr.gm.industry.model
 
-import gr.gm.industry.dto.PriceDto
+import gr.gm.industry.dto.BinancePriceDto
 import gr.gm.industry.utils.enums.{Coin, Currency}
-import reactivemongo.api.bson.{BSONDocumentHandler, BSONObjectID, Macros}
-
+import gr.gm.industry.utils.model.TradingSymbol
 import java.time.LocalDateTime
 import scala.math.BigDecimal.RoundingMode
 
-case class CoinPrice(_id: Option[BSONObjectID],
-                     coin: Coin,
-                     currency: Currency,
-                     price: BigDecimal,
+case class CoinPrice(price: BigDecimal,
+                     symbol: TradingSymbol,
                      timestamp: LocalDateTime
                     ) {
-  override def toString: String = s"Coin: $coin: Price: $price $currency"
+  override def toString: String = s"Symbol: ${symbol.toString()}: Price: $price"
+
 }
 
 object CoinPrice {
   case class PriceError(message: String)
 
-  // This is needed for BSON serialization
-  implicit val coinPriceHandler: BSONDocumentHandler[CoinPrice] = Macros.handler[CoinPrice]
-
-  def apply(priceDto: PriceDto): Either[PriceError, CoinPrice] = {
+  def apply(priceDto: BinancePriceDto): Either[PriceError, CoinPrice] = {
     val price: BigDecimal = BigDecimal(priceDto.price).setScale(5, RoundingMode.HALF_EVEN)
     val coinOpt = Coin.get(priceDto.symbol.take(3))
     val currencyOpt = Currency.get(priceDto.symbol.takeRight(3))
     val priceOtp = coinOpt.zip(currencyOpt)
       .map { case (coin, currency) =>
-        CoinPrice(Option.empty, coin, currency, price, LocalDateTime.now())
+        CoinPrice(price, TradingSymbol(coin, currency), LocalDateTime.now())
       }
     priceOtp match {
       case Some(price) => Right(price)
