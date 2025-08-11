@@ -3,12 +3,14 @@ package gr.gm.industry.streams.sources
 import akka.actor.{ActorSystem, ClassicActorSystemProvider}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
-import akka.{NotUsed, stream}
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
+import akka.{NotUsed, stream}
+import gr.gm.industry.dto.BookTickerPriceDto
 import gr.gm.industry.factories.BinanceUriFactory
-import gr.gm.industry.utils.enums.{Coin, Currency}
+import gr.gm.industry.utils.jsonProtocols.BookTickerPriceProtocol._
 import gr.gm.industry.utils.model.TradingSymbol
+import spray.json._
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
@@ -19,23 +21,24 @@ object BinanceStreamSource {
     implicit system: ClassicActorSystemProvider,
     ec: ExecutionContext,
     mat: Materializer,
-  ): Source[String, NotUsed] = {
-    implicit val classicSystem: ActorSystem = system.classicSystem
+  ): Source[BookTickerPriceDto, NotUsed] = {
 
+    implicit val classicSystem: ActorSystem = system.classicSystem
     val priceWsUri = BinanceUriFactory.getPriceWsUri(tradingSymbol)
     val webSocketUri = WebSocketRequest(priceWsUri)
 
     // This queue will push elements from the WebSocket to downstream consumers
-    val (queue, source): (SourceQueueWithComplete[String], Source[String, NotUsed]) =
-      Source.queue[String](bufferSize = 128, overflowStrategy = stream.OverflowStrategy.dropHead)
+    val (queue, source): (SourceQueueWithComplete[BookTickerPriceDto], Source[BookTickerPriceDto, NotUsed]) =
+      Source.queue[BookTickerPriceDto](bufferSize = 128, overflowStrategy = stream.OverflowStrategy.dropHead)
         .preMaterialize()
 
     // Incoming messages from Binance WS
     val incoming = Sink.foreach[Message] {
       case TextMessage.Strict(text) =>
-        queue.offer(text)
+        val price = text.parseJson.convertTo[BookTickerPriceDto]
+        queue.offer(price)
       case TextMessage.Streamed(stream) =>
-        stream.runFold("")(_ + _).foreach(queue.offer)
+        stream.runFold("")(_ + _).map(text => text.parseJson.convertTo[BookTickerPriceDto]).foreach(queue.offer)
       case _ =>
     }
 

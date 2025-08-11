@@ -3,13 +3,10 @@ package gr.gm.industry.streams
 import akka.NotUsed
 import akka.actor.ClassicActorSystemProvider
 import akka.stream.Materializer
-import akka.stream.scaladsl.{Flow, RunnableGraph, Sink}
-import gr.gm.industry.dto.BookTickerPriceDto
+import akka.stream.scaladsl.{RunnableGraph, Sink}
 import gr.gm.industry.streams.sources.BinanceStreamSource
 import gr.gm.industry.utils.enums.{Coin, Currency}
-import gr.gm.industry.utils.jsonProtocols.BookTickerPriceProtocol._
 import gr.gm.industry.utils.model.TradingSymbol
-import spray.json._
 
 import scala.concurrent.ExecutionContext
 
@@ -22,9 +19,7 @@ object BinanceStreamingProcessingGraph {
   ): RunnableGraph[NotUsed] = {
     val tradingSymbol = TradingSymbol(coin, currency)
     val priceSource = BinanceStreamSource(tradingSymbol)
-    val parsePriceFlow = Flow[String].map(_.parseJson.convertTo[BookTickerPriceDto])
     priceSource
-      .via(parsePriceFlow)
       .to(Sink.foreach { price => println(s"Price: $price") })
   }
 }

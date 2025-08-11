@@ -8,10 +8,10 @@ import gr.gm.industry.utils.model.TradingSymbol
 
 object BinanceUriFactory {
 
-  val BINANCE_API_URL = "https://www.binance.com/api/v3/ticker"
+  val BINANCE_API_URL = "https://www.binance.com/api/v3/ticker/bookTicker"
   val BINANCE_WS_URL = "wss://fstream.binance.com"
 
-  def getPriceUri(symbol: TradingSymbol): Uri =  Uri(s"$BINANCE_API_URL/price")
+  def getPriceRestUri(symbol: TradingSymbol): Uri =  Uri(s"$BINANCE_API_URL")
     .withQuery(Query("symbol" -> symbol.toString))
 
   def getPriceWsUri(symbol: TradingSymbol, streamType: StreamType = BookTicker): Uri =

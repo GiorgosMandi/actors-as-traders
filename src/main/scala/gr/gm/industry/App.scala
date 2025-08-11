@@ -5,12 +5,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Behavior, DispatcherSelector}
 import akka.stream.Materializer
 import com.typesafe.config.{Config, ConfigFactory}
-import gr.gm.industry.actors.BinanceWebClientActor.BinancePricePollingRequest
-import gr.gm.industry.actors.{BinanceWebClientActor, CoinGeckoListenerActor}
-import gr.gm.industry.core.deciders.RandomDecider
+import gr.gm.industry.actors.CoinGeckoListenerActor
+import gr.gm.industry.strategies.RandomStrategy
 import gr.gm.industry.streams.BinanceStreamingProcessingGraph
-import gr.gm.industry.utils.enums.Coin.ETH
-import gr.gm.industry.utils.enums.Currency.EUR
 import gr.gm.industry.utils.enums.{Coin, Currency}
 
 import scala.concurrent.ExecutionContext
@@ -48,16 +45,8 @@ object App extends App {
 
   def testCoinGeckoBehavior(delay: Int = 2): Behavior[NotUsed] = {
     Behaviors.setup { context =>
-      val listener = context.spawn(CoinGeckoListenerActor(RandomDecider), "CoinGeckoListener")
+      val listener = context.spawn(CoinGeckoListenerActor(RandomStrategy), "CoinGeckoListener")
       listener ! CoinGeckoListenerActor.Start(delay)
-      Behaviors.empty
-    }
-  }
-
-  def testBinanceBehavior(delay: Int = 2): Behavior[NotUsed] = {
-    Behaviors.setup { context =>
-      val binanceWebClientActor = context.spawn(BinanceWebClientActor(), "BinanceWebClientActor")
-      binanceWebClientActor ! BinancePricePollingRequest(ETH, EUR, binanceWebClientActor, delay)
       Behaviors.empty
     }
   }

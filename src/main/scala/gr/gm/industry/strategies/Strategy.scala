@@ -1,8 +1,8 @@
-package gr.gm.industry.core.deciders
+package gr.gm.industry.strategies
 
 import gr.gm.industry.model.{CoinPrice, TradeDecision}
 
-trait DecisionMaker {
+trait Strategy {
 
     def decide(price: CoinPrice): TradeDecision
 }

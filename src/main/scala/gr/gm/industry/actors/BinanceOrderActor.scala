@@ -8,7 +8,7 @@ import gr.gm.industry.model.orders.submitted.{FailedPlacedOrder, PlacedOrder}
 
 import scala.util.{Failure, Success}
 
-object BinanceTradeActor {
+object BinanceOrderActor {
 
   // supported messages
   sealed trait BinanceOrder

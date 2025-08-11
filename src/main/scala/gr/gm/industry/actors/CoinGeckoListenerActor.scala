@@ -4,7 +4,7 @@ import akka.actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
 import gr.gm.industry.clients.CoinGeckoHttpClient
-import gr.gm.industry.core.deciders.DecisionMaker
+import gr.gm.industry.strategies.Strategy
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContextExecutor
@@ -34,7 +34,7 @@ object CoinGeckoListenerActor {
   case class Error(message: String) extends CoinGeckoAction
 
   // Upon start, repetitive price requests will be sent based on the provided delay
-  def apply(decisionMaker: DecisionMaker): Behavior[CoinGeckoAction] = Behaviors.withTimers {
+  def apply(decisionMaker: Strategy): Behavior[CoinGeckoAction] = Behaviors.withTimers {
     timers: TimerScheduler[CoinGeckoAction] =>
       Behaviors.receive { (context, action) =>
         action match {

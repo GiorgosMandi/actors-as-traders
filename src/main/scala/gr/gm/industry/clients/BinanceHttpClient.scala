@@ -15,11 +15,12 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.{ExecutionContext, Future}
 
-class BinanceHttpClient(apiKey: String, secretKey: String)
+class BinanceHttpClient(apiKey: String,
+                        secretKey: String,
+                        orderEndpoint: String = "https://testnet.binance.vision/api/v3/order")
                        (implicit system: ClassicActorSystemProvider,
                         ec: ExecutionContext
                        ) {
-  private val endpoint = "https://testnet.binance.vision/api/v3/order" // Testnet Spot API
 
   def placeLimitBuy(orderIntent: OrderIntent): Future[SubmittedOrder] = {
     val timestamp = System.currentTimeMillis()
@@ -39,7 +40,7 @@ class BinanceHttpClient(apiKey: String, secretKey: String)
 
     val request = HttpRequest(
       method = HttpMethods.POST,
-      uri = s"$endpoint?$signedQuery",
+      uri = s"$orderEndpoint?$signedQuery",
       headers = List(RawHeader("X-MBX-APIKEY", apiKey)),
       entity = HttpEntity.Empty // For POST with query params only
     )
