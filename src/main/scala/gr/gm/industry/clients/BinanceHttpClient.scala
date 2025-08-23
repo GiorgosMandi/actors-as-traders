@@ -6,7 +6,7 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import gr.gm.industry.model.TradeDecision.OrderIntent
-import gr.gm.industry.model.orders.submitted.{FailedPlacedOrder, PlacedOrder, SubmittedOrder}
+import gr.gm.industry.model.orders.submitted.{FailedPlacedOrder, PlacedOrder, SuccessfullyPlacedOrder}
 import spray.json.DefaultJsonProtocol._
 import spray.json._
 
@@ -15,14 +15,16 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.{ExecutionContext, Future}
 
-class BinanceHttpClient(apiKey: String,
-                        secretKey: String,
-                        orderEndpoint: String = "https://testnet.binance.vision/api/v3/order")
-                       (implicit system: ClassicActorSystemProvider,
-                        ec: ExecutionContext
+class BinanceHttpClient(
+                         apiKey: String,
+                         secretKey: String,
+                         orderEndpoint: String = "https://testnet.binance.vision/api/v3/order")
+                       (
+                         implicit system: ClassicActorSystemProvider,
+                         ec: ExecutionContext
                        ) {
 
-  def placeLimitBuy(orderIntent: OrderIntent): Future[SubmittedOrder] = {
+  def placeLimitBuy(orderIntent: OrderIntent): Future[PlacedOrder] = {
     val timestamp = System.currentTimeMillis()
     val params = Map(
       "symbol" -> orderIntent.symbol.toString(),
@@ -51,9 +53,9 @@ class BinanceHttpClient(apiKey: String,
           .map { jsString =>
             extractOrderFields(jsString) match {
               case Right((orderId, clientOrderId)) =>
-                PlacedOrder(orderIntent, orderId, clientOrderId): SubmittedOrder
+                SuccessfullyPlacedOrder(orderIntent, orderId, clientOrderId): PlacedOrder
               case Left(err) =>
-                FailedPlacedOrder(orderIntent, s"Failed to extract order fields: $err"): SubmittedOrder
+                FailedPlacedOrder(orderIntent, s"Failed to extract order fields: $err"): PlacedOrder
             }
           }
       }

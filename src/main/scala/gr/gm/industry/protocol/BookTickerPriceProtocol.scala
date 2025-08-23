@@ -1,4 +1,4 @@
-package gr.gm.industry.utils.jsonProtocols
+package gr.gm.industry.protocol
 
 import gr.gm.industry.dto.BookTickerPriceDto
 import gr.gm.industry.utils.model.TradingSymbol

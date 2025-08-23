@@ -1,8 +1,9 @@
 package gr.gm.industry.strategies
 
-import gr.gm.industry.model.{CoinPrice, TradeDecision}
+import gr.gm.industry.dto.BookTickerPriceDto
+import gr.gm.industry.model.TradeDecision
 
 trait Strategy {
 
-    def decide(price: CoinPrice): TradeDecision
+    def decide(price: BookTickerPriceDto): TradeDecision
 }

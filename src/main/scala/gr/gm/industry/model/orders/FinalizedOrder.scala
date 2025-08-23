@@ -1,6 +1,6 @@
 package gr.gm.industry.model.orders
 
-import gr.gm.industry.model.orders.submitted.PlacedOrder
+import gr.gm.industry.model.orders.submitted.SuccessfullyPlacedOrder
 import gr.gm.industry.utils.enums.{OrderStatus, Side}
 import gr.gm.industry.utils.model.TradingSymbol
 
@@ -23,7 +23,7 @@ case class FinalizedOrder(
 }
 
 object FinalizedOrder {
-  def apply(placedOrder: PlacedOrder, finalStatus: OrderStatus, executedQty: BigDecimal): FinalizedOrder = {
+  def apply(placedOrder: SuccessfullyPlacedOrder, finalStatus: OrderStatus, executedQty: BigDecimal): FinalizedOrder = {
     FinalizedOrder(
       orderId = placedOrder.orderId,
       clientOrderId = placedOrder.clientOrderId,

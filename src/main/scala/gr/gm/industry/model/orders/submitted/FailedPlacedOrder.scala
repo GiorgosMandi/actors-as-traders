@@ -6,19 +6,19 @@ import gr.gm.industry.utils.model.TradingSymbol
 
 import java.time.LocalDateTime
 
-case class FailedPlacedOrder(error: String,
+case class FailedPlacedOrder(reason: String,
                              price: BigDecimal,
                              quantity: BigDecimal,
                              side: Side,
                              symbol: TradingSymbol,
                              status: OrderStatus,
                              placedAt: LocalDateTime = LocalDateTime.now()
-                            ) extends SubmittedOrder
+                            ) extends PlacedOrder
 
 object FailedPlacedOrder {
-  def apply(orderIntent: OrderIntent, error: String): FailedPlacedOrder = {
+  def apply(orderIntent: OrderIntent, reason: String): FailedPlacedOrder = {
     FailedPlacedOrder(
-      error = error,
+      reason = reason,
       price = orderIntent.price,
       quantity = orderIntent.quantity,
       side = orderIntent.side,

@@ -18,15 +18,15 @@ object randomTradingWithZipFlow {
         Flow.fromGraph(GraphDSL.create() { implicit builder =>
 
             val broadcast = builder.add(Broadcast[CoinPrice](2))
-            val randomDecider1 = builder.add(Flow[CoinPrice].map(price => RandomStrategy.decide(price)))
-            val randomDecider2 = builder.add(Flow[CoinPrice].map(price => RandomStrategy.decide(price)))
+//            val randomDecider1 = builder.add(Flow[CoinPrice].map(price => RandomStrategy.decide(price)))
+//            val randomDecider2 = builder.add(Flow[CoinPrice].map(price => RandomStrategy.decide(price)))
 
             val zipDecisions = builder.add(Zip[TradeDecision, TradeDecision])
             val makeDecisionFlow = builder.add(Flow[Product].map(decisions => decisions.productIterator.map(_.asInstanceOf[TradeDecision]).toList.last))
 
-            broadcast.out(0) ~> randomDecider1 ~> zipDecisions.in0
-            broadcast.out(1) ~> randomDecider2 ~> zipDecisions.in1
-            zipDecisions.out ~> makeDecisionFlow
+//            broadcast.out(0) ~> randomDecider1 ~> zipDecisions.in0
+//            broadcast.out(1) ~> randomDecider2 ~> zipDecisions.in1
+//            zipDecisions.out ~> makeDecisionFlow
 
             FlowShape(broadcast.in, makeDecisionFlow.out)
         })

@@ -4,10 +4,14 @@ import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorSystem, Behavior, DispatcherSelector}
 import akka.stream.Materializer
+import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
-import gr.gm.industry.actors.CoinGeckoListenerActor
+import gr.gm.industry.actors.{BinanceOrderActor, CoinGeckoListenerActor}
+import gr.gm.industry.clients.BinanceHttpClient
+import gr.gm.industry.messages.CoinGeckoListenerActorMessages.Start
 import gr.gm.industry.strategies.RandomStrategy
 import gr.gm.industry.streams.BinanceStreamingProcessingGraph
+import gr.gm.industry.traders.GenericTrader
 import gr.gm.industry.utils.enums.{Coin, Currency}
 
 import scala.concurrent.ExecutionContext
@@ -34,10 +38,14 @@ object App extends App {
 
   private def testBinanceWebSocketSource(): Behavior[NotUsed] = {
     Behaviors.setup { context =>
+      implicit val timeout: Timeout = 3.seconds
       implicit val system: ActorSystem[Nothing] = context.system
       implicit val ec: ExecutionContext = context.executionContext
       implicit val mat: Materializer = Materializer(context)
-      val graph = BinanceStreamingProcessingGraph(Coin.BTC, Currency.USDT)
+      val binanceHttpClient = new BinanceHttpClient("api-key", "secret")
+      val binanceOrderActor = context.spawn(BinanceOrderActor(binanceHttpClient), "binance-order-actor")
+      val trader = context.spawn(GenericTrader(RandomStrategy, binanceOrderActor), "generic-trader")
+      val graph = BinanceStreamingProcessingGraph(Coin.BTC, Currency.USDT, trader)
       graph.run()
       Behaviors.empty
     }
@@ -46,7 +54,7 @@ object App extends App {
   def testCoinGeckoBehavior(delay: Int = 2): Behavior[NotUsed] = {
     Behaviors.setup { context =>
       val listener = context.spawn(CoinGeckoListenerActor(RandomStrategy), "CoinGeckoListener")
-      listener ! CoinGeckoListenerActor.Start(delay)
+      listener ! Start(delay)
       Behaviors.empty
     }
   }

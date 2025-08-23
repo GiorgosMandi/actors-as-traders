@@ -4,13 +4,16 @@ import akka.actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
 import gr.gm.industry.clients.CoinGeckoHttpClient
+import gr.gm.industry.messages.CoinGeckoListenerActorMessages._
+import gr.gm.industry.model.TradeDecision.OrderIntent
 import gr.gm.industry.strategies.Strategy
+import gr.gm.industry.utils.enums.Side.{BUY, SELL}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.language.postfixOps
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Random, Success}
 
 object CoinGeckoListenerActor {
 
@@ -18,20 +21,6 @@ object CoinGeckoListenerActor {
   implicit val actorSystem: actor.ActorSystem = akka.actor.ActorSystem()
   implicit val dispatcher: ExecutionContextExecutor = actorSystem.dispatcher
 
-  // actions
-  sealed trait CoinGeckoAction
-
-  case object ListenerKey extends CoinGeckoAction
-
-  case class Start(delay: Int) extends CoinGeckoAction
-
-  case object Stop extends CoinGeckoAction
-
-  case object Hit extends CoinGeckoAction
-
-  case object Pause extends CoinGeckoAction
-
-  case class Error(message: String) extends CoinGeckoAction
 
   // Upon start, repetitive price requests will be sent based on the provided delay
   def apply(decisionMaker: Strategy): Behavior[CoinGeckoAction] = Behaviors.withTimers {
@@ -49,7 +38,12 @@ object CoinGeckoListenerActor {
               .onComplete {
               case Success(ethInfo) =>
                 val price = ethInfo.toPrice
-                val decision = decisionMaker.decide(price)
+                // warning naive strategy, not properly integrated
+                val decision =  if (Random.nextInt() % 2 == 0)
+                 OrderIntent(price.price, 10, BUY, price.symbol)
+                else
+                  OrderIntent(price.price, 10, SELL, price.symbol)
+
                 println(s"For $price was decided to $decision.")
               case Failure(exc) =>
                 println(s"Failed to receive price, reason: ${exc.toString}")

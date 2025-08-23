@@ -8,7 +8,7 @@ import akka.stream.scaladsl.{Flow, Keep, Sink, Source, SourceQueueWithComplete}
 import akka.{NotUsed, stream}
 import gr.gm.industry.dto.BookTickerPriceDto
 import gr.gm.industry.factories.BinanceUriFactory
-import gr.gm.industry.utils.jsonProtocols.BookTickerPriceProtocol._
+import gr.gm.industry.protocol.BookTickerPriceProtocol._
 import gr.gm.industry.utils.model.TradingSymbol
 import spray.json._
 
