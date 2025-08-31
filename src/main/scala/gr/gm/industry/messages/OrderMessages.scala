@@ -4,7 +4,7 @@ import akka.actor.typed.ActorRef
 import gr.gm.industry.messages.TraderMessages.OrderPlacementStatus
 import gr.gm.industry.model.TradeDecision.OrderIntent
 
-object BinanceOrderActorMessages {
+object OrderMessages {
 
   // supported messages
   sealed trait BinanceOrder

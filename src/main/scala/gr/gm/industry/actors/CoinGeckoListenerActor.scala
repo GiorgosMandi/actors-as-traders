@@ -4,7 +4,7 @@ import akka.actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
 import gr.gm.industry.clients.CoinGeckoHttpClient
-import gr.gm.industry.messages.CoinGeckoListenerActorMessages._
+import gr.gm.industry.messages.CoinGeckoMessages._
 import gr.gm.industry.model.TradeDecision.OrderIntent
 import gr.gm.industry.strategies.Strategy
 import gr.gm.industry.utils.enums.Side.{BUY, SELL}

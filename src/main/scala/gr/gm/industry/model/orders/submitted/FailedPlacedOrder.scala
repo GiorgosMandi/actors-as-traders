@@ -4,7 +4,7 @@ import gr.gm.industry.model.TradeDecision.OrderIntent
 import gr.gm.industry.utils.enums.{OrderStatus, Side}
 import gr.gm.industry.utils.model.TradingSymbol
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 case class FailedPlacedOrder(reason: String,
                              price: BigDecimal,
@@ -12,8 +12,8 @@ case class FailedPlacedOrder(reason: String,
                              side: Side,
                              symbol: TradingSymbol,
                              status: OrderStatus,
-                             placedAt: LocalDateTime = LocalDateTime.now()
-                            ) extends PlacedOrder
+                             placedAt: Instant = Instant.now()
+                            ) extends PlacedOrderTrait
 
 object FailedPlacedOrder {
   def apply(orderIntent: OrderIntent, reason: String): FailedPlacedOrder = {

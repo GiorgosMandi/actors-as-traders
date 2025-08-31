@@ -3,9 +3,9 @@ package gr.gm.industry.actors
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import gr.gm.industry.clients.BinanceHttpClient
-import gr.gm.industry.messages.BinanceOrderActorMessages._
+import gr.gm.industry.messages.OrderMessages._
 import gr.gm.industry.messages.TraderMessages._
-import gr.gm.industry.model.orders.submitted.{FailedPlacedOrder, SuccessfullyPlacedOrder}
+import gr.gm.industry.model.orders.submitted.{FailedPlacedOrder, PlacedOrder}
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.util.{Failure, Success}
@@ -20,7 +20,7 @@ object BinanceOrderActor {
           binanceHttpClient.placeLimitBuy(orderIntent).onComplete {
             case Success(order) =>
               order match {
-                case placedOrder: SuccessfullyPlacedOrder =>
+                case placedOrder: PlacedOrder =>
                   replyTo ! OrderPlacementFulfilled(placedOrder)
                 case failedOrder: FailedPlacedOrder =>
                   replyTo ! OrderPlacementFailed(failedOrder.reason)

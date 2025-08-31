@@ -1,6 +1,6 @@
 package gr.gm.industry.messages
 
-object CoinGeckoListenerActorMessages {
+object CoinGeckoMessages {
   // actions
   sealed trait CoinGeckoAction
 

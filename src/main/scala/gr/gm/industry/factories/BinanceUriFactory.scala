@@ -15,6 +15,14 @@ object BinanceUriFactory {
     .withQuery(Query("symbol" -> symbol.toString))
 
   def getPriceWsUri(symbol: TradingSymbol, streamType: StreamType = BookTicker): Uri =
-    Uri(s"$BINANCE_WS_URL/ws/${symbol.coin.name.toLowerCase}${symbol.currency.name.toLowerCase}@${streamType.name}")
+    Uri(s"$BINANCE_WS_URL/ws/${symbol.toString}@${streamType.name}")
+
+  def getOrderMonitoringWsURI(listenKey: String): String = {
+    s"wss://stream.binance.com:9443/ws/$listenKey"
+  }
+
+  val BINANCE_USER_DATASTREAM_URI = "https://api.binance.com/api/v3/userDataStream"
+
+  def getBinanceDataStreamWsURI(listenKey: String) = s"wss://stream.binance.com:9443/ws/$listenKey"
 
 }

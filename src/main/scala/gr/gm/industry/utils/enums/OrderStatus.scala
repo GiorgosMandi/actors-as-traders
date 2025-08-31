@@ -21,4 +21,27 @@ object OrderStatus {
   case object CANCELED extends OrderStatus {
     override val name = "CANCELED"
   }
+
+  case object REJECTED extends OrderStatus {
+    override val name = "REJECTED"
+  }
+
+  case object EXPIRED extends OrderStatus {
+    override val name = "EXPIRED"
+  }
+
+
+  case object UNKNOWN extends OrderStatus {
+    override val name = "UNKNOWN"
+  }
+
+  def apply(s: String): OrderStatus =
+    s.toUpperCase() match {
+      case "NEW" => NEW
+      case "PARTIALLY_FILLED" => PARTIALLY_FILLED
+      case "FILLED" => FILLED
+      case "CANCELED" => CANCELED
+      case _ => UNKNOWN
+
+    }
 }

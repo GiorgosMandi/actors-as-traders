@@ -1,39 +1,50 @@
 package gr.gm.industry.model.orders
 
-import gr.gm.industry.model.orders.submitted.SuccessfullyPlacedOrder
-import gr.gm.industry.utils.enums.{OrderStatus, Side}
+import gr.gm.industry.model.ExecutionReport
+import gr.gm.industry.model.orders.submitted.PlacedOrder
+import gr.gm.industry.utils.enums.{OrderStatus, Side, TimeInForce}
 import gr.gm.industry.utils.model.TradingSymbol
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 case class FinalizedOrder(
                            orderId: Long,
                            clientOrderId: String,
+                           tradeId: Long,
+                           orderStatus: OrderStatus,
                            price: BigDecimal,
                            quantity: BigDecimal,
                            side: Side,
                            symbol: TradingSymbol,
+                           timeInForce: TimeInForce,
                            finalStatus: OrderStatus,
                            executedQty: BigDecimal,
-                           placedAt: LocalDateTime,
-                           finalizedAt: LocalDateTime = LocalDateTime.now()
+                           executedPrice: BigDecimal,
+                           placedAt: Instant,
+                           finalizedAt: Instant
                          ) {
-  
-  
+
+
 }
 
 object FinalizedOrder {
-  def apply(placedOrder: SuccessfullyPlacedOrder, finalStatus: OrderStatus, executedQty: BigDecimal): FinalizedOrder = {
+  // todo
+  def apply(placedOrder: PlacedOrder, report: ExecutionReport): FinalizedOrder = {
     FinalizedOrder(
       orderId = placedOrder.orderId,
       clientOrderId = placedOrder.clientOrderId,
+      tradeId = report.orderId,
+      orderStatus = report.orderStatus,
       price = placedOrder.price,
       quantity = placedOrder.quantity,
       side = placedOrder.side,
       symbol = placedOrder.symbol,
-      finalStatus = finalStatus,
-      executedQty = executedQty,
-      placedAt = placedOrder.placedAt
+      timeInForce = placedOrder.timeInForce,
+      finalStatus = report.orderStatus,
+      executedQty = report.lastExecutedQty,
+      executedPrice = report.lastExecutedPrice,
+      placedAt = placedOrder.placedAt,
+      finalizedAt = Instant.ofEpochMilli(report.transactionTime)
     )
   }
 }

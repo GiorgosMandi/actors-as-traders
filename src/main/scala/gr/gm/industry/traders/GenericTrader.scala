@@ -4,7 +4,7 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
 import akka.util.Timeout
-import gr.gm.industry.messages.BinanceOrderActorMessages._
+import gr.gm.industry.messages.OrderMessages._
 import gr.gm.industry.messages.TraderMessages._
 import gr.gm.industry.model.TradeDecision.{NoAction, OrderIntent}
 import gr.gm.industry.model.orders.submitted.PlacedOrder
@@ -62,9 +62,9 @@ object GenericTrader extends Trader {
     // Send order to Binance actor
     binanceActor.ask(replyTo => PlaceOrder(orderIntent, replyTo))
       .map {
-        case OrderPlacementFulfilled(spo) =>
-          context.log.debug(s"Order with id: ${spo.orderId} was placed to the market.")
-          Option.apply(spo)
+        case OrderPlacementFulfilled(placedOrder) =>
+          context.log.debug(s"Order with id: ${placedOrder.orderId} was placed to the market.")
+          Option.apply(placedOrder)
         case OrderPlacementFailed(reason) =>
           context.log.warn(s"Order placement failed with '$reason'")
           Option.empty[PlacedOrder]

@@ -2,16 +2,20 @@ package gr.gm.industry.utils.model
 
 import gr.gm.industry.utils.enums.{Coin, Currency}
 
-case class TradingSymbol(coin: Coin, currency: Currency) {
-
-  override def toString: String = s"${coin.name}${currency.name}"
+class TradingSymbol(symbol: String) {
 }
 
 object TradingSymbol {
 
-  def apply(tradingSymbol: String): TradingSymbol = {
-    val coinOpt = Coin.get(tradingSymbol.substring(0, 3).toUpperCase())
-    val currencyOtp = Currency.get(tradingSymbol.substring(3).toUpperCase())
+  def apply(symbol: String): TradingSymbol = {
+    val coinOpt = Coin.get(symbol.substring(0, 3).toUpperCase())
+    val currencyOtp = Currency.get(symbol.substring(3).toUpperCase())
+    if (coinOpt.isEmpty || currencyOtp.isEmpty) {
+      new TradingSymbol(symbol)
+    }
     TradingSymbol(coinOpt.orNull, currencyOtp.orNull)
   }
+
+  def apply(coin:Coin, currency: Currency): TradingSymbol =
+    new TradingSymbol(s"${coin.name}${currency.name}")
 }

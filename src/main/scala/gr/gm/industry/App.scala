@@ -6,9 +6,9 @@ import akka.actor.typed.{ActorSystem, Behavior, DispatcherSelector}
 import akka.stream.Materializer
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
-import gr.gm.industry.actors.{BinanceOrderActor, CoinGeckoListenerActor}
+import gr.gm.industry.actors.{BinanceOrderActor, BinanceOrderMonitoringActor, CoinGeckoListenerActor}
 import gr.gm.industry.clients.BinanceHttpClient
-import gr.gm.industry.messages.CoinGeckoListenerActorMessages.Start
+import gr.gm.industry.messages.CoinGeckoMessages.Start
 import gr.gm.industry.strategies.RandomStrategy
 import gr.gm.industry.streams.BinanceStreamingProcessingGraph
 import gr.gm.industry.traders.GenericTrader
@@ -45,7 +45,13 @@ object App extends App {
       val binanceHttpClient = new BinanceHttpClient("api-key", "secret")
       val binanceOrderActor = context.spawn(BinanceOrderActor(binanceHttpClient), "binance-order-actor")
       val trader = context.spawn(GenericTrader(RandomStrategy, binanceOrderActor), "generic-trader")
-      val graph = BinanceStreamingProcessingGraph(Coin.BTC, Currency.USDT, trader)
+      val orderMonitorActor = context.spawn(BinanceOrderMonitoringActor(binanceHttpClient), "order-monitoring-actor")
+      val graph = BinanceStreamingProcessingGraph(
+        Coin.BTC,
+        Currency.USDT,
+        trader,
+        orderMonitorActor
+      )
       graph.run()
       Behaviors.empty
     }

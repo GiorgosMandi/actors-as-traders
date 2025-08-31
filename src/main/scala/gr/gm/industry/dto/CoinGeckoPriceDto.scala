@@ -6,13 +6,13 @@ import gr.gm.industry.utils.enums.Currency.EUR
 import gr.gm.industry.utils.model.TradingSymbol
 import spray.json.{DeserializationException, JsNumber, JsValue}
 
-import java.time.LocalDateTime
+import java.time.Instant
 
 case class CoinGeckoPriceDto(price: BigDecimal,
                              marketCap: BigDecimal,
                              volume24h: BigDecimal,
                              change24h: BigDecimal,
-                             timestamp: LocalDateTime
+                             timestamp: Instant
                            ) {
   def toPrice: CoinPrice = {
     CoinPrice(price, TradingSymbol(ETH, EUR), timestamp)
@@ -27,7 +27,7 @@ object CoinGeckoPriceDto {
       ("eur_24h_change", JsNumber(change24h)),
       ("eur_24h_vol", JsNumber(volume24h)),
       ("eur_market_cap", JsNumber(marketCap))
-      ) => CoinGeckoPriceDto(eur, marketCap, volume24h, change24h, LocalDateTime.now())
+      ) => CoinGeckoPriceDto(eur, marketCap, volume24h, change24h, Instant.now())
       case _ => throw DeserializationException(s"Necessary fields were missing. Received $jsValuesMap")
     }
   }
