@@ -23,6 +23,15 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+ * Lightweight Binance REST/WebSocket client for placing orders and consuming user-data streams.
+ *
+ * @param apiKey        Binance API key used for signed and key-authenticated endpoints.
+ * @param secretKey     Secret key for HMAC signatures on signed requests.
+ * @param orderEndpoint Endpoint for order placement (defaults to Binance testnet).
+ * @param system        Akka classic system provider.
+ * @param ec            Execution context for async operations.
+ */
 class BinanceHttpClient(
                          apiKey: String,
                          secretKey: String,
@@ -32,10 +41,17 @@ class BinanceHttpClient(
                          ec: ExecutionContext
                        ) {
 
+  /**
+   * Places a signed LIMIT BUY order.
+   *
+   * @param orderIntent intent containing symbol, price, quantity, and side.
+   * @param timeInForce Binance TIF flag (defaults to FOK).
+   * @return placed order or a failed placeholder.
+   */
   def placeLimitBuy(orderIntent: OrderIntent, timeInForce: TimeInForce = FOK): Future[PlacedOrderTrait] = {
     val timestamp = System.currentTimeMillis()
     val params = Map(
-      "symbol" -> orderIntent.symbol.toString(),
+      "symbol" -> orderIntent.symbol.toString,
       "side" -> "BUY",
       "type" -> "LIMIT",
       "timeInForce" -> FOK.name,
@@ -69,6 +85,12 @@ class BinanceHttpClient(
       }
   }
 
+  /**
+   * Subscribes to the user-data WebSocket using the provided listenKey and forwards execution reports.
+   *
+   * @param listenKey    active user-data stream key.
+   * @param monitorActor target actor to receive parsed `WsEvent`s.
+   */
   def monitorOrders(listenKey: String, monitorActor: ActorRef[OrderEvent]): Unit = {
     val wsUrl = getBinanceDataStreamWsURI(listenKey)
 
@@ -96,10 +118,9 @@ class BinanceHttpClient(
 
 
   /**
-   * Fetch Listener Key, necessary for streaming all actions performed
-   * for or by the user.
+   * Requests a new listenKey for user-data stream.
    *
-   * Listener Keys expires every 60 minutes
+   * @return listenKey string or fails with an error.
    */
   def fetchListenerKey(): Future[String] = {
     val request = HttpRequest(
@@ -123,10 +144,10 @@ class BinanceHttpClient(
   }
 
   /**
-   * Refreshes existing listener key.
+   * Extends the lifetime of an existing listenKey.
    *
-   * @param listenKey listener key
-   * @return nothing if succeeded
+   * @param listenKey listener key to refresh.
+   * @return success or failed future with API error.
    */
   def keepAliveListenKey(listenKey: String): Future[Unit] = {
     val request = HttpRequest(
@@ -167,6 +188,7 @@ class BinanceHttpClient(
     }
   }
 
+  /** Parses raw JSON string into an `ExecutionReport`. */
   def parseExecutionReport(json: String): ExecutionReport = {
     json.parseJson.asJsObject.convertTo[ExecutionReport]
   }

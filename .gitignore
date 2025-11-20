@@ -2,4 +2,11 @@
 *.log
 /target/
 /project/target/
+/.bloop/
+/.bsp/
+/.metals/
+/.vscode/
+/project/.bloop/
+/project/project/
+/project/metals.sbt
 /.idea/

@@ -7,6 +7,24 @@ import gr.gm.industry.utils.model.TradingSymbol
 
 import java.time.Instant
 
+/**
+ * Completed view of an order, combining submission details with execution report data.
+ *
+ * @param orderId        exchange order id.
+ * @param clientOrderId  client id used when placing.
+ * @param tradeId        trade identifier from execution report.
+ * @param orderStatus    latest status from exchange.
+ * @param price          submitted price.
+ * @param quantity       submitted quantity.
+ * @param side           BUY/SELL.
+ * @param symbol         trading pair.
+ * @param timeInForce    TIF used when placing.
+ * @param finalStatus    status at finalization.
+ * @param executedQty    quantity executed in last report.
+ * @param executedPrice  price executed in last report.
+ * @param placedAt       submission time.
+ * @param finalizedAt    time derived from execution report.
+ */
 case class FinalizedOrder(
                            orderId: Long,
                            clientOrderId: String,
@@ -28,7 +46,9 @@ case class FinalizedOrder(
 }
 
 object FinalizedOrder {
-  // todo
+  /**
+   * Convenience constructor combining the placed order and a received execution report.
+   */
   def apply(placedOrder: PlacedOrder, report: ExecutionReport): FinalizedOrder = {
     FinalizedOrder(
       orderId = placedOrder.orderId,

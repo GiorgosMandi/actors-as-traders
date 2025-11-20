@@ -4,14 +4,24 @@ import gr.gm.industry.utils.model.TradingSymbol
 
 import java.time.Instant
 
+/**
+ * Binance bookTicker snapshot for a trading symbol.
+ *
+ * @param updateId     stream update identifier.
+ * @param symbol       trading pair (e.g., BTCUSDT).
+ * @param bestBidPrice highest price a buyer is willing to pay.
+ * @param bestBidQty   quantity available at the best bid price.
+ * @param bestAskPrice lowest price a seller is willing to accept.
+ * @param bestAskQty   quantity available at the best ask price.
+ * @param timestamp    capture time (default: now).
+ */
 case class BookTickerPriceDto(
                                updateId: Long,
                                symbol: TradingSymbol,
-                               bestBidPrice: BigDecimal, // The highest price a buyer is willing to pay for an asset
-                               bestBidQty: BigDecimal, // the quantity willing to purchase with bestBidPrice
-                               bestAskPrice: BigDecimal, // The lowest price a seller is willing to accept for an asset.
-                               bestAskQty: BigDecimal, // the quantity willing to sell with bestAskPrice
+                               bestBidPrice: BigDecimal,
+                               bestBidQty: BigDecimal,
+                               bestAskPrice: BigDecimal,
+                               bestAskQty: BigDecimal,
                                timestamp: Instant = Instant.now()
                              )
-
 

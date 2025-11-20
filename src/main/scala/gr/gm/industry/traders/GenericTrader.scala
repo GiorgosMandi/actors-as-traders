@@ -16,6 +16,14 @@ import scala.util.{Failure, Success}
 
 object GenericTrader extends Trader {
 
+  /**
+   * Generic trader actor that delegates decision-making to a `Strategy` and submits resulting orders.
+   *
+   * For each inbound price update:
+   * - ask the strategy for a `TradeDecision`
+   * - if it returns an `OrderIntent`, forward it to the Binance order actor and reply with the placed order
+   * - otherwise reply with `None`
+   */
   override def apply(strategy: Strategy, binanceActor: ActorRef[BinanceOrder]): Behavior[TraderMessage] = {
     Behaviors.setup { context =>
       implicit val c: ActorContext[TraderMessage] = context

@@ -20,6 +20,18 @@ import scala.concurrent.ExecutionContext
 
 object BinanceStreamingProcessingGraph {
 
+  /**
+   * Builds the end-to-end Akka Stream for live trading on Binance:
+   * - subscribes to the Binance `bookTicker` WebSocket for the given symbol,
+   * - feeds each price tick to the trader actor, which may emit an order,
+   * - forwards placed orders to the order-monitoring actor to await execution reports,
+   * - sinks finalized orders (TODO).
+   *
+   * @param coin                  base asset (e.g. BTC).
+   * @param currency              quote asset (e.g. USDT).
+   * @param trader                actor that decides and places orders.
+   * @param orderMonitoringActor  actor that tracks execution reports for placed orders.
+   */
   def apply(
              coin: Coin,
              currency: Currency,
@@ -34,10 +46,8 @@ object BinanceStreamingProcessingGraph {
 
     val tradingSymbol = TradingSymbol(coin, currency)
     val priceSource = BinanceStreamSource(tradingSymbol)
-    val traderFlow: Flow[BookTickerPriceDto, Option[PlacedOrder], NotUsed] =
-    ActorFlow.ask(trader)(PriceUpdate.apply)
-    val orderMonitoringActorFlow: Flow[PlacedOrder, FinalizedOrder, NotUsed] =
-      ActorFlow.ask(orderMonitoringActor)(MonitorOrder.apply)
+    val traderFlow: Flow[BookTickerPriceDto, Option[PlacedOrder], NotUsed] = ActorFlow.ask(trader)(PriceUpdate.apply)
+    val orderMonitoringActorFlow: Flow[PlacedOrder, FinalizedOrder, NotUsed] = ActorFlow.ask(orderMonitoringActor)(MonitorOrder.apply)
 
     priceSource
       .via(traderFlow)

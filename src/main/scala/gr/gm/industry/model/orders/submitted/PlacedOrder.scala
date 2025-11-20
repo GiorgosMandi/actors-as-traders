@@ -7,6 +7,19 @@ import gr.gm.industry.utils.model.TradingSymbol
 import java.time.Instant
 
 
+/**
+ * Order successfully accepted by the exchange.
+ *
+ * @param orderId       exchange-generated id.
+ * @param clientOrderId client-provided id.
+ * @param timeInForce   time in force policy.
+ * @param price         limit price submitted.
+ * @param quantity      quantity submitted.
+ * @param side          BUY/SELL side.
+ * @param symbol        trading pair.
+ * @param status        current status (initially NEW).
+ * @param placedAt      timestamp of submission.
+ */
 case class PlacedOrder(
                         orderId: Long,
                         clientOrderId: String,
@@ -19,7 +32,10 @@ case class PlacedOrder(
                         placedAt: Instant = Instant.now()
                       ) extends PlacedOrderTrait
 
-  object PlacedOrder {
+object PlacedOrder {
+  /**
+   * Builds a placed order model from an intent and exchange identifiers.
+   */
   def apply(orderIntent: OrderIntent, orderId: Long, clientOrderId: String, timeInForce: TimeInForce): PlacedOrder = {
     PlacedOrder(
       orderId = orderId,
@@ -33,4 +49,3 @@ case class PlacedOrder(
     )
   }
 }
-

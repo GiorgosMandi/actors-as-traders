@@ -7,17 +7,24 @@ import gr.gm.industry.messages.OrderEvents._
 import gr.gm.industry.model.orders.FinalizedOrder
 import gr.gm.industry.model.orders.submitted.PlacedOrder
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.DurationInt
 
 object BinanceOrderMonitoringActor {
 
+  /**
+   * Monitors Binance user-data stream:
+   * - fetches and refreshes the listenKey
+   * - opens the WebSocket connection
+   * - routes execution reports back to the actor tracking each order
+   */
   def apply(binanceHttpClient: BinanceHttpClient): Behavior[OrderEvent] = {
 
     var tracked: Map[Long, (PlacedOrder, ActorRef[FinalizedOrder])] = Map.empty
 
     Behaviors.withTimers { timers =>
       Behaviors.setup { context =>
-        implicit val ec = context.executionContext
+        implicit val ec: ExecutionContextExecutor = context.executionContext
         // kick off initialization
         context.self ! Init
 

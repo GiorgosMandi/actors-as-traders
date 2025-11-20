@@ -12,6 +12,12 @@ import scala.util.{Failure, Success}
 
 object BinanceOrderActor {
 
+  /**
+   * Places orders on Binance: receives order intents, calls the HTTP client to submit a limit BUY,
+   * and replies to the requester with either a placed order or a failure reason.
+   * 
+   * TODO extend for SELL as well
+   */
   def apply(binanceHttpClient: BinanceHttpClient): Behavior[BinanceOrder] = {
     Behaviors.receive { (context, message) =>
       implicit val ec: ExecutionContextExecutor = context.executionContext
