@@ -5,7 +5,6 @@ import akka.http.scaladsl.model.{HttpRequest, HttpResponse, StatusCodes}
 import akka.http.scaladsl.{Http, HttpExt}
 import akka.pattern.pipe
 import akka.util.ByteString
-import gr.gm.industry.dto.CoinGeckoPriceDto
 import gr.gm.industry.gecko.CryptoApiListenerFMS._
 
 // todo - put them in a different project

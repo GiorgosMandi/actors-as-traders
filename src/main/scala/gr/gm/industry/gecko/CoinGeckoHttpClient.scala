@@ -5,7 +5,6 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.{Path, Query}
 import akka.http.scaladsl.model._
 import akka.stream.Materializer
-import gr.gm.industry.dto.CoinGeckoPriceDto
 import gr.gm.industry.utils.enums.Currency.EUR
 import gr.gm.industry.utils.enums.{Coin, Currency}
 import gr.gm.industry.utils.exception.CustomException

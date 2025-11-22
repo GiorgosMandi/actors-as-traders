@@ -31,7 +31,7 @@ object BinanceOrderMonitoringActor {
         Behaviors.receiveMessage {
           case Init =>
             context.log.info("Fetching initial listenKey...")
-            binanceHttpClient.fetchListenerKey().map(ListenKeyFetched.apply).recover {
+            binanceHttpClient.fetchListenKey().map(ListenKeyFetched.apply).recover {
               case ex => StreamFailure(ex)
             }.foreach(context.self ! _)
             Behaviors.same

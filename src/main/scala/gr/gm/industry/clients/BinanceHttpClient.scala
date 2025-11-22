@@ -8,11 +8,14 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import gr.gm.industry.factories.BinanceUriFactory.{BINANCE_USER_DATASTREAM_URI, getBinanceDataStreamWsURI}
 import gr.gm.industry.messages.OrderEvents.{OrderEvent, WsEvent}
 import gr.gm.industry.model.ExecutionReport
 import gr.gm.industry.model.TradeDecision.OrderIntent
-import gr.gm.industry.model.orders.submitted.{FailedPlacedOrder, PlacedOrder, PlacedOrderTrait}
+import gr.gm.industry.model.orders.submitted.{
+  FailedPlacedOrder,
+  PlacedOrder,
+  PlacedOrderTrait
+}
 import gr.gm.industry.protocol.ExecutionReportProtocol._
 import gr.gm.industry.utils.enums.TimeInForce
 import gr.gm.industry.utils.enums.TimeInForce.FOK
@@ -22,33 +25,46 @@ import java.net.URLEncoder
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.{ExecutionContext, Future}
+import gr.gm.industry.utils.enums.Network
 
-/**
- * Lightweight Binance REST/WebSocket client for placing orders and consuming user-data streams.
- *
- * @param apiKey        Binance API key used for signed and key-authenticated endpoints.
- * @param secretKey     Secret key for HMAC signatures on signed requests.
- * @param orderEndpoint Endpoint for order placement (defaults to Binance testnet).
- * @param system        Akka classic system provider.
- * @param ec            Execution context for async operations.
- */
+/** Lightweight Binance REST/WebSocket client for placing orders and consuming
+  * user-data streams.
+  *
+  * @param apiKey
+  *   Binance API key used for signed and key-authenticated endpoints.
+  * @param secretKey
+  *   Secret key for HMAC signatures on signed requests.
+  * @param net
+  *   Binance network
+  * @param system
+  *   Akka classic system provider.
+  * @param ec
+  *   Execution context for async operations.
+  */
 class BinanceHttpClient(
-                         apiKey: String,
-                         secretKey: String,
-                         orderEndpoint: String = "https://testnet.binance.vision/api/v3/order")
-                       (
-                         implicit system: ClassicActorSystemProvider,
-                         ec: ExecutionContext
-                       ) {
+    apiKey: String,
+    secretKey: String,
+    net: Network
+)(implicit
+    system: ClassicActorSystemProvider,
+    ec: ExecutionContext
+) {
 
-  /**
-   * Places a signed LIMIT BUY order.
-   *
-   * @param orderIntent intent containing symbol, price, quantity, and side.
-   * @param timeInForce Binance TIF flag (defaults to FOK).
-   * @return placed order or a failed placeholder.
-   */
-  def placeLimitBuy(orderIntent: OrderIntent, timeInForce: TimeInForce = FOK): Future[PlacedOrderTrait] = {
+  private val endpoints = BinanceEndpointProvider.endpoints(net)
+
+  /** Places a signed LIMIT BUY order.
+    *
+    * @param orderIntent
+    *   intent containing symbol, price, quantity, and side.
+    * @param timeInForce
+    *   Binance TIF flag (defaults to FOK).
+    * @return
+    *   placed order or a failed placeholder.
+    */
+  def placeLimitBuy(
+      orderIntent: OrderIntent,
+      timeInForce: TimeInForce = FOK
+  ): Future[PlacedOrderTrait] = {
     val timestamp = System.currentTimeMillis()
     val params = Map(
       "symbol" -> orderIntent.symbol.toString,
@@ -60,39 +76,122 @@ class BinanceHttpClient(
       "recvWindow" -> "5000",
       "timestamp" -> timestamp.toString
     )
-    val queryString = params.map { case (k, v) => s"$k=${URLEncoder.encode(v, "UTF-8")}" }.mkString("&")
+    val queryString = params
+      .map { case (k, v) => s"$k=${URLEncoder.encode(v, "UTF-8")}" }
+      .mkString("&")
     val signature = sign(queryString)
     val signedQuery = s"$queryString&signature=$signature"
 
     val request = HttpRequest(
       method = HttpMethods.POST,
-      uri = s"$orderEndpoint?$signedQuery",
+      uri = s"${endpoints.orderHttp}?$signedQuery",
       headers = List(RawHeader("X-MBX-APIKEY", apiKey)),
-      entity = HttpEntity.Empty // For POST with query params only
+      entity = HttpEntity.Empty
     )
 
-    Http().singleRequest(request)
+    Http()
+      .singleRequest(request)
       .flatMap { res =>
-        Unmarshal(res.entity).to[String]
+        Unmarshal(res.entity)
+          .to[String]
           .map { jsString =>
             extractOrderFields(jsString) match {
               case Right((orderId, clientOrderId)) =>
-                PlacedOrder(orderIntent, orderId, clientOrderId, timeInForce): PlacedOrderTrait
+                PlacedOrder(
+                  orderIntent,
+                  orderId,
+                  clientOrderId,
+                  timeInForce
+                ): PlacedOrderTrait
               case Left(err) =>
-                FailedPlacedOrder(orderIntent, s"Failed to extract order fields: $err"): PlacedOrderTrait
+                FailedPlacedOrder(
+                  orderIntent,
+                  s"Failed to extract order fields: $err"
+                ): PlacedOrderTrait
             }
           }
       }
   }
 
-  /**
-   * Subscribes to the user-data WebSocket using the provided listenKey and forwards execution reports.
-   *
-   * @param listenKey    active user-data stream key.
-   * @param monitorActor target actor to receive parsed `WsEvent`s.
-   */
-  def monitorOrders(listenKey: String, monitorActor: ActorRef[OrderEvent]): Unit = {
-    val wsUrl = getBinanceDataStreamWsURI(listenKey)
+  /** Places a signed LIMIT SELL order.
+    *
+    * @param orderIntent
+    *   intent containing symbol, price, quantity, and side.
+    * @param timeInForce
+    *   Binance TIF flag (defaults to FOK).
+    * @return
+    *   placed order or a failed placeholder.
+    */
+  def placeLimitSell(
+      orderIntent: OrderIntent,
+      timeInForce: TimeInForce = FOK
+  ): Future[PlacedOrderTrait] = {
+    val timestamp = System.currentTimeMillis()
+    val params = Map(
+      "symbol" -> orderIntent.symbol.toString,
+      "side" -> "SELL",
+      "type" -> "LIMIT",
+      "timeInForce" -> FOK.name,
+      "quantity" -> orderIntent.quantity.toString(),
+      "price" -> orderIntent.price.toString(),
+      "recvWindow" -> "5000",
+      "timestamp" -> timestamp.toString
+    )
+    val queryString = params
+      .map { case (k, v) => s"$k=${URLEncoder.encode(v, "UTF-8")}" }
+      .mkString("&")
+    val signature = sign(queryString)
+    val signedQuery = s"$queryString&signature=$signature"
+
+    val request = HttpRequest(
+      method = HttpMethods.POST,
+      uri = s"${endpoints.orderHttp}?$signedQuery",
+      headers = List(RawHeader("X-MBX-APIKEY", apiKey)),
+      entity = HttpEntity.Empty
+    )
+
+    Http()
+      .singleRequest(request)
+      .flatMap { res =>
+        Unmarshal(res.entity)
+          .to[String]
+          .map { jsString =>
+            extractOrderFields(jsString) match {
+              case Right((orderId, clientOrderId)) =>
+                PlacedOrder(
+                  orderIntent,
+                  orderId,
+                  clientOrderId,
+                  timeInForce
+                ): PlacedOrderTrait
+              case Left(err) =>
+                FailedPlacedOrder(
+                  orderIntent,
+                  s"Failed to extract order fields: $err"
+                ): PlacedOrderTrait
+              case other =>
+                FailedPlacedOrder(
+                  orderIntent,
+                  s"Unexpected response: $other"
+                ): PlacedOrderTrait
+            }
+          }
+      }
+  }
+
+  /** Subscribes to the user-data WebSocket using the provided listenKey and
+    * forwards execution reports.
+    *
+    * @param listenKey
+    *   active user-data stream key.
+    * @param monitorActor
+    *   target actor to receive parsed `WsEvent`s.
+    */
+  def monitorOrders(
+      listenKey: String,
+      monitorActor: ActorRef[OrderEvent]
+  ): Unit = {
+    val wsUrl = endpoints.getBinanceDataStreamWsURI(listenKey)
 
     val incoming: Sink[Message, _] =
       Sink.foreach {
@@ -116,43 +215,56 @@ class BinanceHttpClient(
     Http().singleWebSocketRequest(WebSocketRequest(wsUrl), wsFlow)
   }
 
-
-  /**
-   * Requests a new listenKey for user-data stream.
-   *
-   * @return listenKey string or fails with an error.
-   */
-  def fetchListenerKey(): Future[String] = {
+  /** Requests a new listenKey for user-data stream.
+    *
+    * @return
+    *   listenKey string or fails with an error.
+    */
+  def fetchListenKey(): Future[String] = {
     val request = HttpRequest(
       method = HttpMethods.POST,
-      uri = BINANCE_USER_DATASTREAM_URI,
-      headers = List(RawHeader("X-MBX-APIKEY", apiKey)),
+      uri = endpoints.userDataStreamHttp,
+      headers = List(RawHeader("X-MBX-APIKEY", apiKey))
     )
-    Http().singleRequest(request)
+    Http()
+      .singleRequest(request)
       .flatMap { response =>
         response.status match {
           case StatusCodes.OK =>
             Unmarshal(response).to[String].map { body =>
-              body.parseJson.convertTo[String]
+              val jsObj = body.parseJson.asJsObject
+              jsObj.fields
+                .get("listenKey")
+                .map(_.convertTo[String])
+                .getOrElse(
+                  throw new RuntimeException(
+                    s"Missing listenKey in response: $body"
+                  )
+                )
             }
           case _ =>
             Unmarshal(response).to[String].flatMap { body =>
-              Future.failed(new RuntimeException(s"Failed to fetch listenKey: ${response.status} $body"))
+              Future.failed(
+                new RuntimeException(
+                  s"Failed to fetch listenKey: ${response.status} $body"
+                )
+              )
             }
         }
       }
   }
 
-  /**
-   * Extends the lifetime of an existing listenKey.
-   *
-   * @param listenKey listener key to refresh.
-   * @return success or failed future with API error.
-   */
+  /** Extends the lifetime of an existing listenKey.
+    *
+    * @param listenKey
+    *   listener key to refresh.
+    * @return
+    *   success or failed future with API error.
+    */
   def keepAliveListenKey(listenKey: String): Future[Unit] = {
     val request = HttpRequest(
       method = HttpMethods.PUT,
-      uri = s"$BINANCE_USER_DATASTREAM_URI?listenKey=$listenKey",
+      uri = s"${endpoints.userDataStreamHttp}?listenKey=$listenKey",
       headers = List(headers.RawHeader("X-MBX-APIKEY", apiKey))
     )
     Http().singleRequest(request).flatMap { response =>
@@ -160,7 +272,11 @@ class BinanceHttpClient(
         case StatusCodes.OK => Future.successful(())
         case _ =>
           Unmarshal(response).to[String].flatMap { body =>
-            Future.failed(new RuntimeException(s"Failed to refresh listenKey: ${response.status} $body"))
+            Future.failed(
+              new RuntimeException(
+                s"Failed to refresh listenKey: ${response.status} $body"
+              )
+            )
           }
       }
     }
@@ -168,13 +284,16 @@ class BinanceHttpClient(
 
   private def sign(data: String): String = {
     val sha256HMAC = Mac.getInstance("HmacSHA256")
-    val secretKeySpec = new SecretKeySpec(secretKey.getBytes("UTF-8"), "HmacSHA256")
+    val secretKeySpec =
+      new SecretKeySpec(secretKey.getBytes("UTF-8"), "HmacSHA256")
     sha256HMAC.init(secretKeySpec)
     val macData = sha256HMAC.doFinal(data.getBytes("UTF-8"))
     macData.map("%02x".format(_)).mkString
   }
 
-  private def extractOrderFields(jsonStr: String): Either[String, (Long, String)] = {
+  private def extractOrderFields(
+      jsonStr: String
+  ): Either[String, (Long, String)] = {
     try {
       val jsValue = jsonStr.parseJson.asJsObject
       val orderId = jsValue.fields("orderId").convertTo[Long]
@@ -182,8 +301,10 @@ class BinanceHttpClient(
 
       Right(orderId, clientOrderId)
     } catch {
-      case ex: DeserializationException => Left(s"Failed to extract fields: ${ex.getMessage}")
-      case ex: NoSuchElementException => Left(s"Missing expected field: ${ex.getMessage}")
+      case ex: DeserializationException =>
+        Left(s"Failed to extract fields: ${ex.getMessage}")
+      case ex: NoSuchElementException =>
+        Left(s"Missing expected field: ${ex.getMessage}")
       case ex: Exception => Left(s"Unknown error: ${ex.getMessage}")
     }
   }

@@ -17,6 +17,7 @@ import gr.gm.industry.utils.enums.{Coin, Currency}
 import gr.gm.industry.utils.model.TradingSymbol
 
 import scala.concurrent.ExecutionContext
+import gr.gm.industry.utils.enums.Network
 
 object BinanceStreamingProcessingGraph {
 
@@ -36,7 +37,8 @@ object BinanceStreamingProcessingGraph {
              coin: Coin,
              currency: Currency,
              trader: ActorRef[TraderMessage],
-             orderMonitoringActor: ActorRef[OrderEvent]
+             orderMonitoringActor: ActorRef[OrderEvent],
+             net: Network
            )(
              implicit system: ClassicActorSystemProvider,
              ec: ExecutionContext,
@@ -45,7 +47,7 @@ object BinanceStreamingProcessingGraph {
            ): RunnableGraph[NotUsed] = {
 
     val tradingSymbol = TradingSymbol(coin, currency)
-    val priceSource = BinanceStreamSource(tradingSymbol)
+    val priceSource = BinanceStreamSource(tradingSymbol, net)
     val traderFlow: Flow[BookTickerPriceDto, Option[PlacedOrder], NotUsed] = ActorFlow.ask(trader)(PriceUpdate.apply)
     val orderMonitoringActorFlow: Flow[PlacedOrder, FinalizedOrder, NotUsed] = ActorFlow.ask(orderMonitoringActor)(MonitorOrder.apply)
 

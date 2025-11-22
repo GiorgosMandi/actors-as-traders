@@ -17,8 +17,14 @@ import gr.gm.industry.utils.enums.{Coin, Currency}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+import gr.gm.industry.utils.enums.Network
 
 object App extends App {
+
+  val conf: Config = ConfigFactory.load()
+  private val binanceApiKey: String = conf.getString("app.binance.apiKey")
+  private val binanceSecretKey: String = conf.getString("app.binance.secretKey")
+  private val net = Network.Testnet
 
   private def testTradingBehavior(budget: Long = 200): Behavior[NotUsed] = {
     Behaviors.setup { context =>
@@ -43,7 +49,7 @@ object App extends App {
       implicit val system: ActorSystem[Nothing] = context.system
       implicit val ec: ExecutionContext = context.executionContext
       implicit val mat: Materializer = Materializer(context)
-      val binanceHttpClient = new BinanceHttpClient("api-key", "secret")
+      val binanceHttpClient = new BinanceHttpClient(binanceApiKey, binanceSecretKey, net)
       val binanceOrderActor = context.spawn(BinanceOrderActor(binanceHttpClient), "binance-order-actor")
       val trader = context.spawn(GenericTrader(RandomStrategy, binanceOrderActor), "generic-trader")
       val orderMonitorActor = context.spawn(BinanceOrderMonitoringActor(binanceHttpClient), "order-monitoring-actor")
@@ -51,7 +57,8 @@ object App extends App {
         Coin.BTC,
         Currency.USDT,
         trader,
-        orderMonitorActor
+        orderMonitorActor, 
+        net
       )
       graph.run()
       Behaviors.empty
@@ -67,7 +74,6 @@ object App extends App {
   }
 
   val selectedBehavior = testBinanceWebSocketSource()
-  val conf: Config = ConfigFactory.load()
 
   val system = ActorSystem(selectedBehavior, "actors-as-traders", conf)
   implicit val ec: ExecutionContext = system.dispatchers.lookup(DispatcherSelector.default())

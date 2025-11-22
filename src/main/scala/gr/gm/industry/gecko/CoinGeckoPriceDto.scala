@@ -1,4 +1,4 @@
-package gr.gm.industry.dto
+package gr.gm.industry.gecko
 
 import gr.gm.industry.model.CoinPrice
 import gr.gm.industry.utils.enums.Coin.ETH

@@ -1,5 +1,7 @@
 # actors-as-traders
 
+Akka-based playground for algorithmic trading experiments: consumes Binance market data, streams it through strategies, and drives Binance testnet order placement/monitoring via typed actors and Akka Streams.
+
 ## TO-DOs
 
 - [ ] finalize generic trader, `BinanceOrderActor` must respond with `GenericTrader` messages

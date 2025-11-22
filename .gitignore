@@ -10,3 +10,5 @@
 /project/project/
 /project/metals.sbt
 /.idea/
+.scalafmt.conf
+/env/hft.env
