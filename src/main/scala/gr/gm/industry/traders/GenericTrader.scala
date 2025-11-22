@@ -52,6 +52,9 @@ object GenericTrader extends Trader {
             case _ =>
               Behaviors.unhandled
           }
+
+          case _ =>
+              Behaviors.same
       }
     }
   }

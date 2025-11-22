@@ -1,4 +1,4 @@
-package gr.gm.industry.protocol
+package gr.gm.industry.gecko
 
 import gr.gm.industry.dto.CoinGeckoPriceDto
 import spray.json.{DefaultJsonProtocol, DeserializationException, JsObject, JsValue, RootJsonFormat}

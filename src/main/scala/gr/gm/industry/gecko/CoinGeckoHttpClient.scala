@@ -1,4 +1,4 @@
-package gr.gm.industry.clients
+package gr.gm.industry.gecko
 
 import akka.actor.ClassicActorSystemProvider
 import akka.http.scaladsl.Http
@@ -9,7 +9,7 @@ import gr.gm.industry.dto.CoinGeckoPriceDto
 import gr.gm.industry.utils.enums.Currency.EUR
 import gr.gm.industry.utils.enums.{Coin, Currency}
 import gr.gm.industry.utils.exception.CustomException
-import gr.gm.industry.protocol.CoinGeckoPriceDtoProtocol._
+import gr.gm.industry.gecko.CoinGeckoPriceDtoProtocol._
 import spray.json._
 
 import scala.concurrent.duration._

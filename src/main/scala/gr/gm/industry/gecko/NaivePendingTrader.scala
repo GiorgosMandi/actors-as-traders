@@ -1,4 +1,4 @@
-package gr.gm.industry.traders
+package gr.gm.industry.gecko
 
 // TODO
 //  - Pending State DONE

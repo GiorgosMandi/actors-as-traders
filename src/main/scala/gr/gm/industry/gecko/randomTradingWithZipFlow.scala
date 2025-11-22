@@ -1,4 +1,4 @@
-package gr.gm.industry.streams.flows
+package gr.gm.industry.gecko
 
 import akka.NotUsed
 import akka.stream.FlowShape

@@ -1,10 +1,10 @@
-package gr.gm.industry.actors
+package gr.gm.industry.gecko
 
 import akka.actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.{Behaviors, TimerScheduler}
-import gr.gm.industry.clients.CoinGeckoHttpClient
-import gr.gm.industry.messages.CoinGeckoMessages._
+import gr.gm.industry.gecko.CoinGeckoHttpClient
+import gr.gm.industry.gecko.CoinGeckoMessages._
 import gr.gm.industry.model.TradeDecision.OrderIntent
 import gr.gm.industry.strategies.Strategy
 import gr.gm.industry.utils.enums.Side.{BUY, SELL}
@@ -64,6 +64,9 @@ object CoinGeckoListenerActor {
           case Error(msg) =>
             context.log.warn(s"Received error: $msg")
             context.stop(context.self)
+            Behaviors.same
+          case _ =>
+            context.log.warn(s"Unexpected message")
             Behaviors.same
         }
       }

@@ -6,9 +6,10 @@ import akka.actor.typed.{ActorSystem, Behavior, DispatcherSelector}
 import akka.stream.Materializer
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
-import gr.gm.industry.actors.{BinanceOrderActor, BinanceOrderMonitoringActor, CoinGeckoListenerActor}
+import gr.gm.industry.actors.{BinanceOrderActor, BinanceOrderMonitoringActor}
+import gr.gm.industry.gecko.CoinGeckoListenerActor
 import gr.gm.industry.clients.BinanceHttpClient
-import gr.gm.industry.messages.CoinGeckoMessages.Start
+import gr.gm.industry.gecko.CoinGeckoMessages.Start
 import gr.gm.industry.strategies.RandomStrategy
 import gr.gm.industry.streams.BinanceStreamingProcessingGraph
 import gr.gm.industry.traders.GenericTrader

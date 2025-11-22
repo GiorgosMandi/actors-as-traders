@@ -1,4 +1,4 @@
-package gr.gm.industry.messages
+package gr.gm.industry.gecko
 
 object CoinGeckoMessages {
   // actions
