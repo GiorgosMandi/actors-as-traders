@@ -35,12 +35,18 @@ object OrderStatus {
     override val name = "UNKNOWN"
   }
 
+  case object FAILED extends OrderStatus {
+    override val name = "FAILED"
+  }
+
+
   def apply(s: String): OrderStatus =
     s.toUpperCase() match {
       case "NEW" => NEW
       case "PARTIALLY_FILLED" => PARTIALLY_FILLED
       case "FILLED" => FILLED
       case "CANCELED" => CANCELED
+      case "FAILED" => FAILED
       case _ => UNKNOWN
 
     }

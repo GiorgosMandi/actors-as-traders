@@ -1,7 +1,6 @@
 package gr.gm.industry.model.orders
 
 import gr.gm.industry.model.ExecutionReport
-import gr.gm.industry.model.orders.submitted.PlacedOrder
 import gr.gm.industry.utils.enums.{OrderStatus, Side, TimeInForce}
 import gr.gm.industry.utils.model.TradingSymbol
 

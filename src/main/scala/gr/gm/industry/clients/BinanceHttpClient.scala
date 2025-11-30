@@ -8,14 +8,10 @@ import akka.http.scaladsl.model.headers.RawHeader
 import akka.http.scaladsl.model.ws.{Message, TextMessage, WebSocketRequest}
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import gr.gm.industry.messages.OrderEvents.{OrderEvent, WsEvent}
+import gr.gm.industry.messages.BinanceOrderMonitorMessages.{BinanceOrderMonitorMessage, WsEvent}
 import gr.gm.industry.model.ExecutionReport
 import gr.gm.industry.model.TradeDecision.OrderIntent
-import gr.gm.industry.model.orders.submitted.{
-  FailedPlacedOrder,
-  PlacedOrder,
-  PlacedOrderTrait
-}
+import gr.gm.industry.model.orders.{FailedPlacedOrder, PlacedOrder, PlacedOrderTrait}
 import gr.gm.industry.protocol.ExecutionReportProtocol._
 import gr.gm.industry.utils.enums.TimeInForce
 import gr.gm.industry.utils.enums.TimeInForce.FOK
@@ -189,7 +185,7 @@ class BinanceHttpClient(
     */
   def monitorOrders(
       listenKey: String,
-      monitorActor: ActorRef[OrderEvent]
+      monitorActor: ActorRef[BinanceOrderMonitorMessage]
   ): Unit = {
     val wsUrl = endpoints.getBinanceDataStreamWsURI(listenKey)
 

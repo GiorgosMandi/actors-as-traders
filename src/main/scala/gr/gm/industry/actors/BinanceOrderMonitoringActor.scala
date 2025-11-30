@@ -3,9 +3,9 @@ package gr.gm.industry.actors
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ActorRef, Behavior}
 import gr.gm.industry.clients.BinanceHttpClient
-import gr.gm.industry.messages.OrderEvents._
+import gr.gm.industry.messages.BinanceOrderMonitorMessages._
 import gr.gm.industry.model.orders.FinalizedOrder
-import gr.gm.industry.model.orders.submitted.PlacedOrder
+import gr.gm.industry.model.orders.PlacedOrder
 
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.DurationInt
@@ -18,9 +18,12 @@ object BinanceOrderMonitoringActor {
    * - opens the WebSocket connection
    * - routes execution reports back to the actor tracking each order
    */
-  def apply(binanceHttpClient: BinanceHttpClient): Behavior[OrderEvent] = {
+  def apply(
+             binanceHttpClient: BinanceHttpClient
+           ): Behavior[BinanceOrderMonitorMessage] = {
 
-    var tracked: Map[Long, (PlacedOrder, ActorRef[FinalizedOrder])] = Map.empty
+    var tracked: Map[Long, (PlacedOrder, ActorRef[FinalizedOrder])] =
+      Map.empty
 
     Behaviors.withTimers { timers =>
       Behaviors.setup { context =>
@@ -51,8 +54,10 @@ object BinanceOrderMonitoringActor {
             Behaviors.same
 
           case WsEvent(report) =>
-            tracked.get(report.orderId).foreach { case (placedOder, ref) =>
-              ref ! FinalizedOrder(placedOder, report)
+            tracked.get(report.orderId).foreach { case (placedOrder, replyTo) =>
+              val finalizedOrder = FinalizedOrder(placedOrder, report)
+              replyTo ! finalizedOrder
+              tracked -= report.orderId
             }
             Behaviors.same
 

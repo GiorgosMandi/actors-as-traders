@@ -1,4 +1,4 @@
-package gr.gm.industry.model.orders.submitted
+package gr.gm.industry.model.orders
 
 import gr.gm.industry.model.TradeDecision.OrderIntent
 import gr.gm.industry.utils.enums.{OrderStatus, Side}
@@ -35,7 +35,7 @@ object FailedPlacedOrder {
       quantity = orderIntent.quantity,
       side = orderIntent.side,
       symbol = orderIntent.symbol,
-      status = OrderStatus.NEW
+      status = OrderStatus.FAILED
     )
   }
 }

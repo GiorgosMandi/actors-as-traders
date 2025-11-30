@@ -1,18 +1,15 @@
 package gr.gm.industry
 
 import akka.NotUsed
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
 import akka.actor.typed.{ActorSystem, Behavior, DispatcherSelector}
 import akka.stream.Materializer
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
-import gr.gm.industry.actors.{BinanceOrderActor, BinanceOrderMonitoringActor}
 import gr.gm.industry.gecko.CoinGeckoListenerActor
-import gr.gm.industry.clients.BinanceHttpClient
 import gr.gm.industry.gecko.CoinGeckoMessages.Start
 import gr.gm.industry.strategies.RandomStrategy
 import gr.gm.industry.streams.BinanceStreamingProcessingGraph
-import gr.gm.industry.traders.GenericTrader
 import gr.gm.industry.utils.enums.{Coin, Currency}
 
 import scala.concurrent.ExecutionContext
@@ -49,16 +46,14 @@ object App extends App {
       implicit val system: ActorSystem[Nothing] = context.system
       implicit val ec: ExecutionContext = context.executionContext
       implicit val mat: Materializer = Materializer(context)
-      val binanceHttpClient = new BinanceHttpClient(binanceApiKey, binanceSecretKey, net)
-      val binanceOrderActor = context.spawn(BinanceOrderActor(binanceHttpClient), "binance-order-actor")
-      val trader = context.spawn(GenericTrader(RandomStrategy, binanceOrderActor), "generic-trader")
-      val orderMonitorActor = context.spawn(BinanceOrderMonitoringActor(binanceHttpClient), "order-monitoring-actor")
+      implicit val ac: ActorContext[NotUsed] = context
+     
       val graph = BinanceStreamingProcessingGraph(
         Coin.BTC,
         Currency.USDT,
-        trader,
-        orderMonitorActor, 
-        net
+        net,
+        binanceApiKey,
+        binanceSecretKey
       )
       graph.run()
       Behaviors.empty
