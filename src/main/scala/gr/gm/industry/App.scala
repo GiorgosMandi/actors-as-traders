@@ -22,32 +22,16 @@ object App extends App {
   private val binanceApiKey: String = conf.getString("app.binance.apiKey")
   private val binanceSecretKey: String = conf.getString("app.binance.secretKey")
   private val net = Network.Testnet
+  implicit val timeout: Timeout = 60.second
 
-  private def testTradingBehavior(budget: Long = 200): Behavior[NotUsed] = {
-    Behaviors.setup { context =>
-//      implicit val system: ActorSystem[Nothing] = context.system
-//      val binanceActor: ActorRef[BinanceMessage] = context.spawn(BinanceWebClientActor(), "BinanceActor")
-//      val priceSource = BinancePriceSource(binanceActor, parallelism = 5, throttle = (4, 1))
-//
-//      val naiveTrader = context.spawn(NaivePendingTrader(budget, binanceActor), "NaiveTrader")
-//      val decisionMakerFlow = PriceFlow.decisionMakerFlow
-//      priceSource.apply()
-//        .via(decisionMakerFlow)
-//        .to(Sink.foreach { tradeAction => naiveTrader ! tradeAction })
-//        .run()
-
-      Behaviors.empty
-    }
-  }
 
   private def testBinanceWebSocketSource(): Behavior[NotUsed] = {
     Behaviors.setup { context =>
-      implicit val timeout: Timeout = 3.seconds
       implicit val system: ActorSystem[Nothing] = context.system
       implicit val ec: ExecutionContext = context.executionContext
       implicit val mat: Materializer = Materializer(context)
       implicit val ac: ActorContext[NotUsed] = context
-     
+
       val graph = BinanceStreamingProcessingGraph(
         Coin.BTC,
         Currency.USDT,
@@ -56,23 +40,16 @@ object App extends App {
         binanceSecretKey
       )
       graph.run()
-      Behaviors.empty
-    }
-  }
-
-  def testCoinGeckoBehavior(delay: Int = 2): Behavior[NotUsed] = {
-    Behaviors.setup { context =>
-      val listener = context.spawn(CoinGeckoListenerActor(RandomStrategy), "CoinGeckoListener")
-      listener ! Start(delay)
-      Behaviors.empty
+      Behaviors.ignore
     }
   }
 
   val selectedBehavior = testBinanceWebSocketSource()
 
   val system = ActorSystem(selectedBehavior, "actors-as-traders", conf)
-  implicit val ec: ExecutionContext = system.dispatchers.lookup(DispatcherSelector.default())
+  implicit val ec: ExecutionContext =
+    system.dispatchers.lookup(DispatcherSelector.default())
 
-
-  system.scheduler.scheduleOnce(60.second, () => system.terminate())
+  val timeoutScheduler = 65.second
+  system.scheduler.scheduleOnce(timeoutScheduler, () => system.terminate())
 }

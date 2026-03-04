@@ -8,6 +8,7 @@ import gr.gm.industry.utils.model.TradingSymbol
 final case class BinanceEndpoints(
     orderHttp: String,
     futuresWs: String,
+    timeHttp: String,
     userDataStreamHttp: String,
     userDataStreamWs: String
 ) {
@@ -15,8 +16,11 @@ final case class BinanceEndpoints(
       symbol: TradingSymbol,
       streamType: StreamType = BookTicker
   ): Uri =
-    Uri(s"$futuresWs/ws/${symbol.toString}@${streamType.name}")
+    Uri(
+      s"$futuresWs/${symbol.toString.toLowerCase}@${streamType.name}"
+    )
 
-  def getBinanceDataStreamWsURI(listenKey: String) = s"$userDataStreamWs/$listenKey"
+  def getBinanceDataStreamWsURI(listenKey: String) =
+    s"$userDataStreamWs/$listenKey"
 
 }

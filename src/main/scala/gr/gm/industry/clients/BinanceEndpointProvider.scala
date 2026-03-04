@@ -8,18 +8,21 @@ object BinanceEndpointProvider {
 
     case Network.Mainnet =>
       BinanceEndpoints(
-        orderHttp            = "https://api.binance.com/api/v3/order",
-        futuresWs            = "wss://fstream.binance.com",
-        userDataStreamHttp   = "https://api.binance.com/api/v3/userDataStream",
-        userDataStreamWs     = "wss://stream.binance.com:9443/ws" // append /$listenKey at runtime
+        orderHttp = "https://api.binance.com/api/v3/order",
+        futuresWs = "wss://stream.binance.com:9443/ws",
+        timeHttp = "https://api.binance.com/api/v3/time",
+        userDataStreamHttp = "https://api.binance.com/api/v3/userDataStream",
+        userDataStreamWs = "wss://stream.binance.com:9443/ws"
       )
 
     case Network.Testnet =>
       BinanceEndpoints(
-        orderHttp            = "https://testnet.binance.vision/api/v3/order",
-        futuresWs            = "wss://stream.binancefuture.com/ws",
-        userDataStreamHttp   = "https://testnet.binance.vision/api/v3/userDataStream",
-        userDataStreamWs     = "wss://testnet.binance.vision/ws" // append /$listenKey at runtime
+        orderHttp = "https://testnet.binance.vision/api/v3/order",
+        futuresWs = "wss://stream.binancefuture.com/ws",
+        timeHttp = "https://testnet.binance.vision/api/v3/time",
+        userDataStreamHttp =
+          "https://testnet.binance.vision/api/v3/userDataStream",
+        userDataStreamWs = "wss://testnet.binance.vision/ws"
       )
   }
 

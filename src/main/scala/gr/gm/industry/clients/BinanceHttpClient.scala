@@ -61,52 +61,53 @@ class BinanceHttpClient(
       orderIntent: OrderIntent,
       timeInForce: TimeInForce = FOK
   ): Future[PlacedOrderTrait] = {
-    val timestamp = System.currentTimeMillis()
-    val params = Map(
-      "symbol" -> orderIntent.symbol.toString,
-      "side" -> "BUY",
-      "type" -> "LIMIT",
-      "timeInForce" -> FOK.name,
-      "quantity" -> orderIntent.quantity.toString(),
-      "price" -> orderIntent.price.toString(),
-      "recvWindow" -> "5000",
-      "timestamp" -> timestamp.toString
-    )
-    val queryString = params
-      .map { case (k, v) => s"$k=${URLEncoder.encode(v, "UTF-8")}" }
-      .mkString("&")
-    val signature = sign(queryString)
-    val signedQuery = s"$queryString&signature=$signature"
+    timestampWithOffset().flatMap { timestamp =>
+      val params = Map(
+        "symbol" -> orderIntent.symbol.toString,
+        "side" -> "BUY",
+        "type" -> "LIMIT",
+        "timeInForce" -> FOK.name,
+        "quantity" -> orderIntent.quantity.toString(),
+        "price" -> orderIntent.price.toString(),
+        "recvWindow" -> "5000",
+        "timestamp" -> timestamp.toString
+      )
+      val queryString = params
+        .map { case (k, v) => s"$k=${URLEncoder.encode(v, "UTF-8")}" }
+        .mkString("&")
+      val signature = sign(queryString)
+      val signedQuery = s"$queryString&signature=$signature"
 
-    val request = HttpRequest(
-      method = HttpMethods.POST,
-      uri = s"${endpoints.orderHttp}?$signedQuery",
-      headers = List(RawHeader("X-MBX-APIKEY", apiKey)),
-      entity = HttpEntity.Empty
-    )
+      val request = HttpRequest(
+        method = HttpMethods.POST,
+        uri = s"${endpoints.orderHttp}?$signedQuery",
+        headers = List(RawHeader("X-MBX-APIKEY", apiKey)),
+        entity = HttpEntity.Empty
+      )
 
-    Http()
-      .singleRequest(request)
-      .flatMap { res =>
-        Unmarshal(res.entity)
-          .to[String]
-          .map { jsString =>
-            extractOrderFields(jsString) match {
-              case Right((orderId, clientOrderId)) =>
-                PlacedOrder(
-                  orderIntent,
-                  orderId,
-                  clientOrderId,
-                  timeInForce
-                ): PlacedOrderTrait
-              case Left(err) =>
-                FailedPlacedOrder(
-                  orderIntent,
-                  s"Failed to extract order fields: $err"
-                ): PlacedOrderTrait
+      Http()
+        .singleRequest(request)
+        .flatMap { res =>
+          Unmarshal(res.entity)
+            .to[String]
+            .map { jsString =>
+              extractOrderFields(jsString) match {
+                case Right((orderId, clientOrderId)) =>
+                  PlacedOrder(
+                    orderIntent,
+                    orderId,
+                    clientOrderId,
+                    timeInForce
+                  ): PlacedOrderTrait
+                case Left(err) =>
+                  FailedPlacedOrder(
+                    orderIntent,
+                    s"Failed to extract order fields: $err"
+                  ): PlacedOrderTrait
+              }
             }
-          }
-      }
+        }
+    }
   }
 
   /** Places a signed LIMIT SELL order.
@@ -122,57 +123,58 @@ class BinanceHttpClient(
       orderIntent: OrderIntent,
       timeInForce: TimeInForce = FOK
   ): Future[PlacedOrderTrait] = {
-    val timestamp = System.currentTimeMillis()
-    val params = Map(
-      "symbol" -> orderIntent.symbol.toString,
-      "side" -> "SELL",
-      "type" -> "LIMIT",
-      "timeInForce" -> FOK.name,
-      "quantity" -> orderIntent.quantity.toString(),
-      "price" -> orderIntent.price.toString(),
-      "recvWindow" -> "5000",
-      "timestamp" -> timestamp.toString
-    )
-    val queryString = params
-      .map { case (k, v) => s"$k=${URLEncoder.encode(v, "UTF-8")}" }
-      .mkString("&")
-    val signature = sign(queryString)
-    val signedQuery = s"$queryString&signature=$signature"
+    timestampWithOffset().flatMap { timestamp =>
+      val params = Map(
+        "symbol" -> orderIntent.symbol.toString,
+        "side" -> "SELL",
+        "type" -> "LIMIT",
+        "timeInForce" -> FOK.name,
+        "quantity" -> orderIntent.quantity.toString(),
+        "price" -> orderIntent.price.toString(),
+        "recvWindow" -> "5000",
+        "timestamp" -> timestamp.toString
+      )
+      val queryString = params
+        .map { case (k, v) => s"$k=${URLEncoder.encode(v, "UTF-8")}" }
+        .mkString("&")
+      val signature = sign(queryString)
+      val signedQuery = s"$queryString&signature=$signature"
 
-    val request = HttpRequest(
-      method = HttpMethods.POST,
-      uri = s"${endpoints.orderHttp}?$signedQuery",
-      headers = List(RawHeader("X-MBX-APIKEY", apiKey)),
-      entity = HttpEntity.Empty
-    )
+      val request = HttpRequest(
+        method = HttpMethods.POST,
+        uri = s"${endpoints.orderHttp}?$signedQuery",
+        headers = List(RawHeader("X-MBX-APIKEY", apiKey)),
+        entity = HttpEntity.Empty
+      )
 
-    Http()
-      .singleRequest(request)
-      .flatMap { res =>
-        Unmarshal(res.entity)
-          .to[String]
-          .map { jsString =>
-            extractOrderFields(jsString) match {
-              case Right((orderId, clientOrderId)) =>
-                PlacedOrder(
-                  orderIntent,
-                  orderId,
-                  clientOrderId,
-                  timeInForce
-                ): PlacedOrderTrait
-              case Left(err) =>
-                FailedPlacedOrder(
-                  orderIntent,
-                  s"Failed to extract order fields: $err"
-                ): PlacedOrderTrait
-              case other =>
-                FailedPlacedOrder(
-                  orderIntent,
-                  s"Unexpected response: $other"
-                ): PlacedOrderTrait
+      Http()
+        .singleRequest(request)
+        .flatMap { res =>
+          Unmarshal(res.entity)
+            .to[String]
+            .map { jsString =>
+              extractOrderFields(jsString) match {
+                case Right((orderId, clientOrderId)) =>
+                  PlacedOrder(
+                    orderIntent,
+                    orderId,
+                    clientOrderId,
+                    timeInForce
+                  ): PlacedOrderTrait
+                case Left(err) =>
+                  FailedPlacedOrder(
+                    orderIntent,
+                    s"Failed to extract order fields: $err"
+                  ): PlacedOrderTrait
+                case other =>
+                  FailedPlacedOrder(
+                    orderIntent,
+                    s"Unexpected response: $other"
+                  ): PlacedOrderTrait
+              }
             }
-          }
-      }
+        }
+    }
   }
 
   /** Subscribes to the user-data WebSocket using the provided listenKey and
@@ -308,5 +310,30 @@ class BinanceHttpClient(
   /** Parses raw JSON string into an `ExecutionReport`. */
   def parseExecutionReport(json: String): ExecutionReport = {
     json.parseJson.asJsObject.convertTo[ExecutionReport]
+  }
+
+  private def timestampWithOffset(): Future[Long] = {
+    fetchServerTime()
+      .map { serverTime =>
+        val localNow = System.currentTimeMillis()
+        localNow + computeServerOffset(serverTime, localNow)
+      }
+      .recover { case _ => System.currentTimeMillis() }
+  }
+
+  private def computeServerOffset(serverTime: Long, localTime: Long): Long =
+    serverTime - localTime
+
+  private def fetchServerTime(): Future[Long] = {
+    Http()
+      .singleRequest(HttpRequest(uri = endpoints.timeHttp))
+      .flatMap { res =>
+        Unmarshal(res.entity)
+          .to[String]
+          .map { body =>
+            val jsObj = body.parseJson.asJsObject
+            jsObj.fields("serverTime").convertTo[Long]
+          }
+      }
   }
 }

@@ -3,6 +3,7 @@ package gr.gm.industry.utils.model
 import gr.gm.industry.utils.enums.{Coin, Currency}
 
 class TradingSymbol(symbol: String) {
+  override def toString: String = symbol
 }
 
 object TradingSymbol {
@@ -16,6 +17,6 @@ object TradingSymbol {
     TradingSymbol(coinOpt.orNull, currencyOtp.orNull)
   }
 
-  def apply(coin:Coin, currency: Currency): TradingSymbol =
+  def apply(coin: Coin, currency: Currency): TradingSymbol =
     new TradingSymbol(s"${coin.name}${currency.name}")
 }
